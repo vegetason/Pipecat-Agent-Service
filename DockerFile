@@ -1,0 +1,27 @@
+# ── Base ───────────────────────────────────────────────────────────────────
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# ── System dependencies ────────────────────────────────────────────────────
+# ffmpeg + libsndfile1 required for audio decoding (Pipecat / torchaudio)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        libsndfile1 \
+        build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Python dependencies ────────────────────────────────────────────────────
+# Copy requirements first so Docker layer cache survives code-only changes
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ── Application code ───────────────────────────────────────────────────────
+COPY . .
+
+# ── Runtime ───────────────────────────────────────────────────────────────
+EXPOSE 8000
+
+# Reload disabled in production; controlled by APP_ENV in .env
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
