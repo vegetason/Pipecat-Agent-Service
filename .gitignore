@@ -1,0 +1,4 @@
+.env
+dev_fixtures/
+__pycache__/
+*.pyc
