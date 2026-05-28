@@ -1,0 +1,626 @@
+
+INTERVUE AI
+AI Interview Simulation Platform
+Train Hard. Interview Fearlessly.
+PRODUCT REQUIREMENTS DOCUMENT
+Version 3.0  |  May 2026  |  Confidential
+
+Field	Details
+Document Title	Intervue AI — Product Requirements Document
+Version	3.0 (Emotion-Aware, Multi-Mode, Node.js Backend)
+Status	Draft
+Date	May 2026
+Classification	Confidential
+Core User	Job candidates seeking to improve interview performance
+Core Value	The most realistic, pressure-accurate interview simulation in the world
+Backend	Node.js + Express / Fastify
+Agent Framework	Pipecat (Python — agent service only)
+
+ 
+Table of Contents
+
+
+ 
+1. Executive Summary
+
+Intervue AI is an AI-powered interview simulation platform that helps job candidates prepare for real interviews by experiencing the closest possible replica of the real thing. Unlike generic interview prep tools, Intervue AI puts users under genuine pressure — serious AI interviewers, active proctoring, strict time constraints, and no second chances — so that when they face a real interview, they have already been there.
+
+Mission	To make every candidate interview-ready by giving them a simulation so real, the actual interview feels familiar.
+
+Core Philosophy	Real interviews are serious, pressured, and unforgiving. Our simulation must be too. A comfortable simulation produces a comfortable candidate who fails under real pressure.
+
+Target User	Any individual preparing for a job interview — students, fresh graduates, experienced professionals, career switchers, and anyone returning to the job market.
+
+What's New in v3.0	Emotion-Aware Adaptation, Weakness Pattern Memory, Ghost Mode, Pressure Multiplier, Rambling Detection, What-If Replay, Silent Mode. Backend migrated to Node.js.
+
+2. Product Overview
+2.1 What Is Intervue AI?
+Intervue AI is a SaaS platform where users simulate real job interviews with an AI voice agent. The agent behaves like a real, serious interviewer — it does not forgive weak answers, it challenges vague responses, it follows up aggressively, and it maintains professional pressure throughout. After each simulation, users receive a comprehensive feedback report designed to help them understand exactly what they did wrong and how to improve.
+
+2.2 Why Realism Is the Core Product
+What Others Offer	What Intervue AI Offers
+Watch interview tip videos	Live voice simulation with a serious AI interviewer
+Read sample questions	Personalized questions based on your actual CV and target role
+Soft chatbot practice	Unforgiving agent that challenges, pushes back, and probes
+Generic feedback	Deep per-answer analysis with actionable improvement steps
+No pressure environment	Proctoring, timers, real-time emotion detection and pressure adaptation
+One-size-fits-all	Simulations tailored to specific company styles, roles, and seniority
+Static recording review	Interactive What-If Replay — change any answer and see alternate outcomes
+Forgets you between sessions	Remembers your weakness patterns and coaches you before every simulation
+
+3. Technology Stack
+
+Architecture Note	The backend is built in Node.js (Express or Fastify). The Pipecat voice agent runs as a separate Python microservice that communicates with the Node.js backend via HTTP and WebSocket. This separation keeps the real-time voice pipeline independent from the main API.
+
+Layer	Technology	Purpose
+Backend API	Node.js + Express / Fastify	REST API, auth, business logic, session management
+Database ORM	Prisma	Type-safe DB access from Node.js
+Voice Agent Framework	Pipecat (Python microservice)	Real-time voice pipeline — STT, LLM, TTS orchestration
+Agent-Backend Comms	HTTP + WebSocket	Node.js triggers agent, agent sends data back to Node.js
+Speech-to-Text	Deepgram	Fast, accurate real-time transcription
+LLM Brain	Claude (Anthropic)	Interview intelligence, reactions, evaluation, coaching
+Text-to-Speech	Cartesia / ElevenLabs	Natural, low-latency voice synthesis
+Voice Cloning (Ghost Mode)	ElevenLabs Voice Lab	Clone user voice for Ghost Mode ideal-self playback
+Emotion Analysis	wav2vec2-emotion / Silero (on-device)	Real-time stress and emotion detection from voice
+Rambling Detection	Custom NLP processor (Pipecat processor)	Token count + semantic repetition analysis
+WebRTC Transport	Daily.co	Real-time audio/video communication
+Database	PostgreSQL	Primary data store
+Cache & Broker	Redis	Caching, sessions, job queues
+Background Tasks	BullMQ (Node.js)	Async evaluation, report generation, notifications
+File Storage	AWS S3 / Cloudflare R2	Recordings, reports, CV uploads
+Containerization	Docker + Docker Compose	Dev and production environments
+Reverse Proxy	Nginx	Rate limiting, SSL, load balancing
+Orchestration	Kubernetes (Phase 3)	Production scaling
+
+4. System Architecture Overview
+4.1 Service Separation
+The platform is split into two distinct services that communicate over the network:
+
+•	Node.js API Service — handles all business logic: auth, user profiles, simulation management, billing, evaluations, notifications, background jobs
+•	Pipecat Agent Service — a Python microservice that handles the real-time voice pipeline only. It is spun up per simulation, talks to Claude, Deepgram, and ElevenLabs, and sends data back to Node.js
+
+4.2 Communication Flow
+Step	What Happens	Direction
+1	User starts simulation via frontend	Browser → Node.js API
+2	Node.js creates Daily.co room, fetches question bank, assembles context	Node.js → Daily.co API + PostgreSQL
+3	Node.js spawns Pipecat agent subprocess / container with simulation context	Node.js → Pipecat Service
+4	Pipecat agent joins Daily.co room and begins interview	Pipecat → Daily.co
+5	Candidate joins the same Daily.co room	Browser → Daily.co
+6	Live interview runs — Deepgram → Claude → Cartesia loop	Inside Pipecat
+7	Pipecat sends transcript chunks in real time to Node.js	Pipecat → Node.js WebSocket
+8	Pipecat sends emotion/stress scores to Node.js in real time	Pipecat → Node.js WebSocket
+9	Interview ends — Pipecat sends full transcript + metadata to Node.js	Pipecat → Node.js HTTP POST
+10	Node.js queues evaluation job via BullMQ	Node.js → Redis → BullMQ Worker
+11	BullMQ worker calls Claude API to evaluate answers, generate report	BullMQ → Claude API
+12	Results saved to PostgreSQL, user notified	Node.js → DB + Email
+
+5. Core User Journey
+
+Stage	What Happens	Key Features
+1. Onboarding	User creates account, builds profile, uploads CV	CV parsing, LinkedIn import, goal setting
+2. Setup	User selects role, company style, difficulty, persona, mode	Simulation configurator, scenario library
+3. Pre-Sim Check	Environment and identity verification	Mic/camera check, proctoring setup
+4. Warmup (optional)	Quick unscored practice questions	Warmup mode with live feedback
+5. Simulation	Full AI interview under real conditions	Voice agent, proctoring, timers, emotion detection
+6. Debrief	Instant detailed feedback report	Per-answer analysis, voice/body metrics, integrity score
+7. Replay & Review	Watch full interview with annotations	Replay player, heatmap, What-If Replay
+8. Ghost Mode (optional)	Listen to ideal version of yourself answer the same questions	Ghost Mode, voice cloning
+9. Improvement Plan	AI generates targeted practice plan	Skill gap report, coaching drills
+10. Progress Tracking	User tracks improvement over time	Dashboard, trend charts, weakness memory
+
+6. Realism & Pressure Features
+6.1 The AI Interviewer — Serious by Design
+Core Rule	The agent never rewards a bad answer. It never moves on from a weak answer without probing. It behaves exactly as a seasoned, professional interviewer would.
+
+•	Agent never accepts vague answers — always probes for specifics and concrete examples
+•	Agent pushes back on weak answers — challenges candidate to defend their position
+•	Agent detects rehearsed, textbook answers and digs underneath them
+•	Agent does not give hints or help — if candidate is stuck, silence is the response
+•	Agent maintains professional tone — no warmth inflation to make candidate comfortable
+•	Agent uses thinking pauses before responding — simulates real human processing time
+•	Agent gives natural acknowledgements before moving to next question
+•	Agent uses controlled follow-ups — maximum 2 per question, always on topic
+•	Agent detects rambling and politely cuts the candidate off (see Section 6.6)
+•	Agent handles interruptions naturally — just like a real interviewer would
+
+6.2 Interviewer Personas
+Persona	Style	Best For Practicing
+The Corporate Executive	Formal, precise, zero tolerance for filler words, expects structured answers	Big 4, banks, Fortune 500
+The Big Tech Engineer	Technical depth focus, asks follow-ups on every claim, expects specifics	FAANG, top tech companies
+The Startup Founder	Fast-paced, informal but sharp, tests adaptability and hustle mindset	Startups, scale-ups
+The Management Consultant	Structured thinking expected, case-style follow-ups, challenges logic	McKinsey, BCG, Bain
+The Silent Type	Minimal reactions, long pauses, lets silence pressure the candidate	Stress tolerance training
+The Devil's Advocate	Challenges every single answer, plays opposition to everything said	Resilience and debate prep
+The Friendly Trap	Appears warm but catches candidate off guard with hard follow-ups	Realistic mixed-tone interviews
+The Panel	Multiple AI voices simulating a panel interview from different angles	Panel interview prep
+Custom Persona	User defines a specific style for a target company or interviewer type	Company-specific prep
+
+6.3 Proctoring as Psychological Pressure
+Key Insight	Proctoring in Intervue AI is not about catching cheaters. It is about creating the psychological experience of being watched and evaluated — exactly as in a real interview. This pressure is the training.
+
+•	Camera required — simulation cannot start without active camera feed
+•	Explicit pre-simulation warning — user informed they are being monitored, just like a real interview
+•	Face detection — alert if candidate leaves frame
+•	Eye tracking — detects consistent off-screen gaze, flags as note-reading behavior
+•	Tab switching detection — flagged and noted in post-simulation Integrity Report
+•	Multiple faces detection — flags if another person enters the frame
+•	Voice consistency monitoring — detects if a different voice is speaking
+•	Background noise analysis — flags coaching or whispering
+•	Phone detection — computer vision flags if candidate reads from a phone
+•	All flags shown to candidate as self-awareness data in post-simulation Integrity Report
+•	Proctoring Integrity Score shown alongside performance score
+
+6.4 Time Pressure System
+•	Every simulation has a strict time limit matching real interview durations — 30, 45, or 60 minutes
+•	Visible countdown timer throughout the simulation
+•	Per-question time limits — agent moves on if candidate takes too long
+•	Time pressure warning — subtle visual cue when approaching question time limit
+•	Hard mode — 20% shorter time limits for extreme pressure training
+•	Time usage analysis in debrief — too slow, too fast, or well-paced per question
+
+6.5 Pressure Multiplier — Dynamic Difficulty Escalation Mid-Simulation
+Feature	The agent doesn't have fixed difficulty. It measures performance per question and escalates dynamically if the candidate is performing too well — exactly as real interviewers do when they sense strength.
+
+•	State machine maintains a live pressure_score updated after every answer
+•	If last answer score > 85%, agent injects an unplanned escalation challenge from a secondary question bank
+•	Escalation types:
+◦	Harder follow-up not originally in the question plan
+◦	Mid-answer interruption — 'Let me stop you there. What is the core assumption you are making?'
+◦	Edge case challenge — 'That works in ideal conditions. What if X failed?'
+◦	Contradiction probe — 'You said X earlier. How does that square with what you just said?'
+•	If candidate is struggling, difficulty stays flat — escalation only triggers on strong performance
+•	Pressure Multiplier history shown in debrief — candidate sees exactly where difficulty was escalated and why
+•	Implementation: state_machine/transitions.py — after each answer, compute pressure adjustment and optionally load escalation question from fallback bank
+
+6.6 Rambling Detection & Intelligent Interruption
+Feature	Real interviewers interrupt when they have heard enough. The agent does the same — but precisely, not randomly. A length + relevance model decides when to cut the candidate off politely.
+
+•	processors/rambling_detector.py monitors token count and semantic repetition in real time
+•	If rambling score exceeds threshold, an interrupt_frame is sent to the LLM
+•	Agent interruption types:
+◦	Polite cut-off: 'I think I got the point — let's move to the next question.'
+◦	Reframe request: 'That was a bit abstract. Can you give me a concrete example?'
+◦	Refocus: 'You mentioned X — can we stay focused on that specifically?'
+•	Rambling flag included in post-simulation report with timestamp of each interruption
+•	Semantic repetition detection — if candidate is saying the same thing in different words, agent flags it
+•	Response length analysis — too brief, appropriate, or rambling scored per question
+
+6.7 Simulation Modes
+Mode	Description	Purpose
+Full Simulation	Complete end-to-end interview, no pauses, no retries, timed	Main mode — maximum realism
+Question Drill	Practice a single question type repeatedly until mastered	Targeted weakness improvement
+Rapid Fire	5 questions in 10 minutes, high pressure	Confidence and agility training
+Endurance Mode	90-minute interview with increasing difficulty	Stamina and consistency training
+Blind Mode	No question preview, no topic hints — full surprise	Maximum realism
+Mirror Mode	Same simulation repeated — track improvement on identical questions	Measurable progress tracking
+Nightmare Mode	Hardest persona, shortest time, most aggressive follow-ups + Pressure Multiplier always on	Elite pressure training
+Silent Mode	No agent voice — questions shown on screen, feedback is body language only	Non-verbal communication training (see Section 6.8)
+Ghost Mode	Post-simulation — hear the ideal version of yourself answer the same questions	Learning by contrast (see Section 8.3)
+Custom Mode	User configures every parameter — persona, topics, difficulty, duration	Specific targeted practice
+
+6.8 Silent Mode — Body Language Only Training
+Feature	A simulation mode where the agent does not speak. Questions appear on screen. The user answers while being recorded. Feedback covers only non-verbal communication — isolating body language training from the cognitive load of listening.
+
+•	Agent runs without TTS — no voice output at all
+•	Questions displayed as text on screen with a per-question countdown timer
+•	Proctoring and video analysis run fully — camera is the entire focus
+•	LLM does not evaluate answer content in this mode — only non-verbal metrics are scored
+•	Post-session report covers only: eye contact, posture, facial expressions, gestures, head movement
+•	Ideal for candidates who want to isolate and fix body language without the pressure of responding to a voice
+•	Implementation: modes/silent_mode.py — TTS pipeline disabled, display layer handles question rendering
+
+6.9 Ambient Realism Features
+•	Realistic office background shown behind interviewer avatar — boardroom, startup space, video call setup
+•	Interviewer avatar with lip-sync animation — not just a voice, a visible presence
+•	Waiting room experience — candidate waits 60-90 seconds before interviewer joins
+•	Occasional realistic interruptions — interviewer checks notes, brief pause to write something
+•	Interviewer takes notes visibly during answers — subtle but pressure-inducing
+•	End-of-interview wrap sequence — interviewer says goodbye naturally, explains fictional next steps
+•	Ambient office sounds option — keyboard clicks, distant office noise
+•	No retry button visible during simulation — by design
+
+7. Emotion-Aware Adaptation
+Game Changer	Real interviewers pick up on nervousness. Some soften, some push harder. Our agent does the same — in real time, based on actual voice analysis. This is the feature that makes the simulation feel alive.
+
+7.1 What It Does
+The agent continuously analyzes the candidate's voice tone, pace, and micro-pauses to detect their emotional state. A stress_level score is computed in real time and injected into the LLM context as a dynamic modifier. The agent's behavior adapts based on this score — just like a real interviewer would adapt when they sense the candidate is struggling or breezing through.
+
+7.2 Emotional States Detected
+State Detected	Signal	Agent Behavior
+High Stress / Anxiety	Fast pace, voice tremor, frequent micro-pauses, rising pitch	Agent softens slightly: 'Take your time, I will wait.' Reduces question complexity temporarily.
+Over-Confidence	Very fast answers, minimal pauses, rehearsed cadence	Agent challenges harder: 'That sounds rehearsed. Give me a real example from your experience.'
+Confusion	Long pauses, trailing sentences, rising intonation at end of statements	Agent rephrases the question once — and only once. Does not rephrase again.
+Disengagement	Flat tone, very short answers, monotone delivery	Agent increases energy and directness to re-engage: 'Walk me through that in more detail.'
+Recovered Calm	Stress drops after initial high — pace normalizes	Agent returns to standard pressure level naturally
+
+7.3 Implementation
+•	New file: processors/emotion_analyzer.py — Pipecat custom frame processor
+•	Uses wav2vec2-emotion or Silero — small on-device model, no external API call, no added latency
+•	Runs as a parallel processor in the Pipecat pipeline — does not block the main STT → LLM → TTS flow
+•	Outputs a stress_level score (0.0 to 1.0) and emotion_tag (anxious, overconfident, confused, disengaged, calm)
+•	context_builder.py modified to include candidate_stress_level and emotion_tag in every LLM prompt
+•	Persona prompt gets a dynamic modifier appended based on current emotion state
+•	Emotion timeline stored in DB per session — shown in post-simulation report as an emotional journey chart
+
+7.4 Emotion Timeline in Debrief
+•	Visual chart showing stress level across the entire interview duration
+•	Annotated with which questions caused the most stress
+•	Shows recovery patterns — how quickly candidate calmed down after a hard question
+•	Correlated with performance — does stress correlate with weaker answers for this user?
+•	Trend across simulations — is the user's baseline stress level decreasing over time?
+
+8. Advanced Learning Features
+8.1 Weakness Pattern Memory Across Sessions
+Feature	The agent remembers across multiple simulations that you always ramble on 'Tell me about yourself' or always forget the STAR method. It proactively coaches you before the next simulation begins. No other tool does this.
+
+•	Node.js backend tracks top 3 recurring weakness patterns per user across all simulations
+•	Weakness patterns detected:
+◦	Consistent rambling on specific question types
+◦	Consistent failure to use STAR method on behavioral questions
+◦	Consistent eye contact drops at specific moments
+◦	Consistent filler word spikes on technical questions
+◦	Consistent under-answering — too brief on important questions
+•	Before each simulation, agent calls Node.js endpoint GET /api/v1/profile/weaknesses/ to fetch top patterns
+•	Patterns injected into the agent's system prompt as pre-simulation reminders
+•	Agent opens the simulation with a personalized coaching note:
+◦	'Before we begin — last time you struggled with structuring your answers. Today I will prompt you with Situation, Task, Action, Result after each question.'
+•	User can toggle this feature on or off — some users prefer to be tested cold
+•	Weakness pattern history visible in user dashboard — shows which patterns are improving over time
+•	Implementation: services/user_memory.py in Pipecat service, API endpoint in Node.js
+
+8.2 Post-Simulation What-If Scenario Replay
+Feature	After a simulation, the user can click on any answer and ask: 'What if I had answered differently?' The agent re-runs only that question with the new answer and shows how the follow-ups would have changed. Static recording becomes an interactive learning tool.
+
+•	Available after every completed simulation — accessed from the Replay screen
+•	User selects any question from the timeline
+•	User types or speaks an alternate answer
+•	System re-simulates only that single turn — using the stored context, persona, and difficulty
+•	Returns how the agent would have followed up given the new answer
+•	No full WebRTC session needed — runs as a stateless LLM call, returns text response
+•	User can try multiple alternate answers for the same question — unlimited
+•	Shows side-by-side: original answer + follow-up vs new answer + follow-up
+•	Teaches users to understand the cause-and-effect of their answers on interviewer behavior
+•	Implementation: POST /api/v1/sessions/:id/replay-question — Node.js endpoint that calls Claude with stored context
+
+8.3 Ghost Mode — Interview the Perfect Version of Yourself
+Feature	After a simulation, the platform creates an AI version of the candidate that answers the same questions perfectly. The candidate can hear those ideal answers spoken in their own voice. It is like shadowboxing with a perfect version of yourself.
+
+•	Available after every completed simulation as an optional post-debrief experience
+•	Node.js backend pre-generates ideal answers for every question using Claude — structured as the ideal version of the candidate's own style
+•	A second LLM instance is loaded with a special prompt: 'You are this candidate's ideal self. Answer perfectly — confident, structured, concrete, using the STAR method where applicable.'
+•	Ideal answers are spoken using the user's own cloned voice via ElevenLabs Voice Lab
+•	User hears themselves — but better. Confident, structured, no filler words
+•	Side-by-side mode: user's actual answer (audio) vs ghost ideal answer (audio) — played alternately
+•	User can also read a transcript comparison alongside the audio
+•	Voice cloning requires explicit upfront user consent — consent captured during onboarding and before first Ghost Mode use
+•	Voice clone stored securely, used only for Ghost Mode within the platform
+•	Implementation: modes/ghost_mode.py for agent, services/voice_cloning.py wrapping ElevenLabs Voice Lab API
+
+9. Pre-Simulation Features
+9.1 Candidate Profile & CV Intelligence
+•	User creates a rich profile once — reused across all simulations
+•	CV upload — AI extracts skills, experience, education, projects automatically
+•	LinkedIn profile import — pulls work history, skills, and endorsements
+•	Portfolio links — GitHub, Behance, Dribbble, personal website
+•	Target role setup — user defines the role and seniority they are preparing for
+•	Agent reads full candidate profile before simulation and personalizes every question
+•	Agent references actual CV details — makes it feel like a real prepared interviewer
+•	CV gap detection — agent specifically probes gaps or inconsistencies in the CV
+
+9.2 Simulation Configurator
+•	Select interview type — Technical, Behavioral, Mixed, Case Study, Culture Fit
+•	Select role and industry from extensive library or enter custom role
+•	Select seniority level — Intern, Junior, Mid, Senior, Lead, Executive
+•	Select interviewer persona from full persona library
+•	Select simulation mode — Full, Drill, Rapid Fire, Blind, Silent, Ghost, Nightmare, Custom
+•	Select duration — 20, 30, 45, or 60 minutes
+•	Select difficulty — Standard, Hard, Nightmare
+•	Toggle Pressure Multiplier on or off
+•	Toggle Weakness Memory coaching on or off
+•	Optional: paste job description for hyper-personalized simulation
+
+9.3 Environment & Readiness Check
+•	Microphone quality test — too quiet, too loud, background noise detected
+•	Camera quality check — lighting, face visibility, frame position guidance
+•	Internet speed test — warns if connection may cause issues
+•	Full readiness score before simulation starts with specific fix instructions
+
+9.4 Warmup Mode
+•	Optional 3-5 minute warmup before the real simulation — unscored and unrecorded
+•	Agent gives live feedback during warmup — pace, clarity, filler words
+•	Warmup uses a softer persona — only place softness is allowed in the platform
+•	Clear transition signal when warmup ends and real simulation begins
+
+10. During-Simulation Features
+•	Real-time transcription displayed on screen — candidate sees their words as they speak
+•	Filler words highlighted in real time — shown in a different color as they occur
+•	Subtle progress indicator — Question X of Y and time remaining
+•	Per-question countdown appears when approaching time limit
+•	No pause button — simulation is uninterruptible by design
+•	Silence handling — agent gives one neutral prompt after extended silence, then moves on
+•	Silence duration tracked and included in post-simulation report
+•	Live emotion state visible to user (optional) — subtle indicator showing current stress level
+•	Tab switching detection active — flags recorded silently
+
+11. Post-Simulation Features
+11.1 Instant Performance Report
+•	Overall performance score with letter grade — A, B, C, D, F
+•	Score breakdown: Technical Knowledge, Communication, Confidence, Relevance, STAR Usage, Problem Solving
+•	Per-question breakdown — score, strengths, weaknesses, ideal answer framework, improvement tip
+•	Emotion Timeline — stress level chart across the full interview with question annotations
+•	Pressure Multiplier log — where difficulty was escalated and what triggered it
+•	Rambling flags — timestamps of all interruptions with reason
+•	Integrity Report — proctoring flags shown as self-awareness data
+
+11.2 Voice & Communication Analytics
+•	Filler word count — total 'uhm', 'like', 'you know', 'basically', 'kind of' detected
+•	Speaking pace analysis — words per minute, flagged if too fast or too slow
+•	Vocal variety score — monotone vs dynamic delivery
+•	Volume consistency — drops suggesting lack of confidence
+•	Pause analysis — strategic pauses vs nervous hesitation
+•	Sentence completion rate — how often candidate trailed off
+•	Response length analysis — too brief, appropriate, or rambling per question
+
+11.3 Body Language Analysis
+•	Eye contact score — camera vs looking away
+•	Posture analysis — upright vs slouched
+•	Facial expression analysis — engaged, nervous, confident, disengaged
+•	Hand gesture detection — natural vs excessive or absent
+•	Overall non-verbal communication score with specific improvement tips
+
+11.4 Deep Answer Intelligence
+•	STAR method compliance per behavioral answer
+•	Buzzword vs substance ratio — filler language vs real content
+•	Depth score per answer — surface-level vs genuinely deep
+•	Consistency check — contradictions across answers flagged
+•	Claim verification — did candidate back up claims with examples?
+•	Keyword coverage — were expected concepts for the role mentioned?
+
+11.5 Interview Replay
+•	Full video and audio replay with chapter markers per question
+•	Annotations overlaid at flagged moments — filler words, eye contact breaks, strong answers, rambling interruptions
+•	Heatmap timeline — strong and weak moments at a glance
+•	Speed control — 0.75x, 1x, 1.5x, 2x
+•	Side-by-side transcript and video
+•	Download replay option
+
+11.6 Skill Gap Report
+•	Visual breakdown of demonstrated skills vs skills required for target role
+•	Specific gaps with severity — critical vs minor
+•	Curated learning resources per gap
+•	Re-simulation recommendation — which mode to do next
+
+12. Candidate Growth & Improvement Features
+12.1 AI Interview Coach
+•	Separate conversational AI available 24/7 outside of simulations
+•	Knows full simulation history, emotion patterns, weakness memory
+•	Proactively identifies patterns — 'you consistently struggle with behavioral questions, let us work on that'
+•	Daily coaching micro-sessions — 5-10 minute focused improvement drills
+•	Role-play mode — practice specific answers conversationally before a simulation
+•	Pre-interview pep talk mode — motivational preparation session before a real interview
+
+12.2 Progress Dashboard
+•	Overall improvement score tracked across all simulations
+•	Per-category trend charts — communication, confidence, technical depth, STAR usage, emotion baseline
+•	Weakness pattern improvement tracker — are recurring patterns actually improving?
+•	Emotion baseline trend — is stress level at start of simulations decreasing over time?
+•	Simulation history, streaks, personal bests, weekly summary email
+•	Anonymous benchmarking — percentile vs peers for same role
+
+12.3 Difficulty Progression & Goal-Based Prep Plans
+•	Auto-difficulty mode — system adjusts difficulty based on recent scores
+•	User sets a goal — 'I have a Google interview in 3 weeks'
+•	Platform generates day-by-day preparation plan — simulations, drills, coaching, rest days
+•	Plan adapts as performance evolves
+•	Countdown to interview date with readiness score
+
+12.4 Interview Anxiety Program
+•	Progressive exposure — starts with very low pressure, short simulations, familiar topics
+•	Breathing exercise integration before simulation starts
+•	Emotion baseline tracked — difficulty only increases when stress baseline is stable
+•	Desensitization library — repeated exposure to specific triggers candidate fears most
+
+12.5 Achievement & Motivation System
+•	Badges: first simulation, 7-day streak, scored above 80%, eliminated filler words, perfect eye contact, completed Nightmare Mode
+•	Weekly challenges — specific improvement goal for the week
+•	Shareable performance certificates — Bronze (70%+), Silver (80%+), Gold (90%+), Platinum (95%+)
+•	LinkedIn-ready verified badges with simulation details and integrity score
+
+13. Core Data Models
+
+Model	Key Fields	Relationships
+User	id, email, subscription_plan, created_at, streak_count, ghost_mode_consent	Has one Profile, many Simulations
+CandidateProfile	id, user_id, cv_url, linkedin_url, target_role, target_seniority, skills_json, voice_clone_id	Belongs to User
+WeaknessPattern	id, user_id, pattern_type, frequency, last_seen_at, improving	Belongs to User
+Simulation	id, user_id, mode, persona, role, difficulty, duration, status, pressure_multiplier_on, weakness_memory_on	Has one Session, QuestionBank
+QuestionBank	id, simulation_id, questions_json, escalation_bank_json, generated_at	Belongs to Simulation
+SimulationSession	id, simulation_id, room_url, started_at, ended_at, transcript_json, recording_url, emotion_timeline_json	Has one Evaluation, ProctoringLog
+Evaluation	id, session_id, overall_score, grade, category_scores_json, per_question_json, rambling_flags_json, pressure_log_json	Belongs to Session
+EmotionTimeline	id, session_id, snapshots_json (timestamp, stress_level, emotion_tag)	Belongs to Session
+VoiceMetrics	id, session_id, filler_count, pace_wpm, vocal_variety, volume_consistency, pause_data_json	Belongs to Session
+BodyLanguageReport	id, session_id, eye_contact_score, posture_score, expression_score, gesture_score	Belongs to Session
+ProctoringLog	id, session_id, flags_json, integrity_score, tab_switches, face_away_count	Belongs to Session
+GhostModeSession	id, session_id, ideal_answers_json, voice_clone_audio_urls_json, created_at	Belongs to Session
+WhatIfReplay	id, session_id, question_index, original_answer, alternate_answer, alternate_followup, created_at	Belongs to Session
+CoachingSession	id, user_id, transcript_json, topic, created_at	Belongs to User
+PrepPlan	id, user_id, target_date, role, daily_tasks_json, completion_pct	Belongs to User
+Achievement	id, user_id, type, earned_at, shared_to_linkedin	Belongs to User
+
+14. API Design — Node.js
+14.1 Conventions
+•	Node.js backend — Express or Fastify, versioned at /api/v1/
+•	JWT Bearer token authentication on all protected routes
+•	Consistent response envelope — { success, data, error, meta }
+•	Pagination, filtering, and sorting on all list endpoints
+•	Full OpenAPI / Swagger documentation auto-generated via swagger-jsdoc or equivalent
+•	BullMQ for all background jobs — evaluation, report generation, notifications
+
+14.2 Key Endpoint Groups
+Group	Base Path	Description
+Authentication	/api/v1/auth/	Register, login, OAuth, magic link, token refresh
+User Profile	/api/v1/profile/	CV upload, LinkedIn import, target role, preferences
+Weaknesses	/api/v1/profile/weaknesses/	Fetch, update, track weakness patterns — called by Pipecat agent before simulation
+Simulations	/api/v1/simulations/	Configure, start, end, list simulation sessions
+Question Banks	/api/v1/questions/	Generate and retrieve question banks per simulation
+Sessions	/api/v1/sessions/	Room URL retrieval, session state, transcript chunks (WebSocket)
+What-If Replay	/api/v1/sessions/:id/replay-question	Stateless LLM call to re-simulate a single question turn
+Evaluations	/api/v1/evaluations/	Full report, scores, per-question breakdown, emotion timeline
+Ghost Mode	/api/v1/ghost/	Generate ideal answers, trigger voice clone synthesis
+Voice Metrics	/api/v1/voice-metrics/	Filler words, pace, vocal variety per session
+Body Language	/api/v1/body-language/	Camera analysis report per session
+Proctoring	/api/v1/proctoring/	Integrity report, flags, integrity score
+Coach	/api/v1/coach/	Coaching chat sessions, drill recommendations
+Progress	/api/v1/progress/	Dashboard data, trend charts, weakness memory trends
+Prep Plans	/api/v1/prep-plans/	Goal setup, daily plan, progress updates
+Achievements	/api/v1/achievements/	List, earn, share badges and certificates
+Notifications	/api/v1/notifications/	In-app and email notification preferences
+Billing	/api/v1/billing/	Plans, usage, subscription management
+
+15. Pipecat Agent Architecture
+15.1 Agent File Structure
+File / Folder	Purpose
+main.py	Entry point — receives simulation context from Node.js, assembles pipeline, starts session
+pipeline/pipeline_builder.py	Assembles the full Pipecat pipeline with all processors
+state_machine/interview_flow.py	Pipecat Flows definition — all stages and transitions
+state_machine/transitions.py	Transition logic — pressure_score computation, escalation trigger
+processors/emotion_analyzer.py	wav2vec2/Silero emotion detection — outputs stress_level and emotion_tag
+processors/rambling_detector.py	Token count + semantic repetition — outputs rambling_score, triggers interrupt_frame
+context/context_builder.py	Assembles full LLM system prompt — persona, questions, CV, stress level, weakness memory
+services/retrieval.py	Calls Node.js API to fetch question bank, user weaknesses, simulation config
+services/user_memory.py	Fetches and parses weakness patterns from Node.js before simulation
+services/voice_cloning.py	ElevenLabs Voice Lab integration for Ghost Mode
+services/transcript_logger.py	Sends transcript chunks to Node.js via WebSocket in real time
+modes/silent_mode.py	Silent Mode — disables TTS, enables text display, body-language-only feedback
+modes/ghost_mode.py	Ghost Mode — loads ideal answer LLM instance, synthesizes with voice clone
+subagents/evaluator_agent.py	Background subagent — scores each answer silently in parallel
+subagents/proctoring_agent.py	Background subagent — monitors camera/audio for integrity flags
+
+15.2 Simulation State Machine
+•	INITIALIZING — loading user profile, questions, persona, weakness memory, emotion analyzer
+•	WAITING_ROOM — simulated wait 60-90 seconds before interviewer joins
+•	INTRO — interviewer introduces themselves, delivers weakness memory coaching note if enabled
+•	QUESTIONING — asking current question from pre-approved bank
+•	LISTENING — processing answer, running emotion analysis and rambling detection in parallel
+•	CHALLENGING — pushing back on weak or vague answer
+•	FOLLOW_UP — probing deeper on current topic (max 2 per question)
+•	ESCALATING — Pressure Multiplier triggered — injecting unplanned escalation challenge
+•	TRANSITIONING — acknowledging answer, moving to next question naturally
+•	WRAP_UP — closing simulation, fictional next steps
+•	COMPLETED — sending full transcript, emotion timeline, and metadata to Node.js
+
+16. Infrastructure & DevOps
+16.1 Local Development Stack
+•	Docker Compose — all services with one command
+•	Services: Node.js API, PostgreSQL, Redis, BullMQ worker, Nginx, Pipecat agent (Python container)
+•	Pipecat agent runs as a separate container — communicates with Node.js over internal Docker network
+•	Seeded demo data — sample profiles, simulations, evaluations for testing
+
+16.2 Production Architecture
+•	Multiple Node.js API instances behind Nginx load balancer
+•	Each Pipecat agent runs in its own isolated Docker container per simulation session
+•	Auto-scaling agent containers based on active simulation count
+•	PostgreSQL with read replicas for analytics queries
+•	Redis cluster for high availability
+•	BullMQ workers auto-scale based on evaluation queue depth
+•	S3 / Cloudflare R2 for recordings, CV files, voice clones, reports
+•	Kubernetes for production orchestration at scale (Phase 3)
+
+17. Pricing & Subscription Tiers
+
+Feature	Free	Pro	Elite
+Simulations per month	3	Unlimited	Unlimited
+Simulation modes	Full only	All modes	All modes
+Interviewer personas	2 basic	All personas	All + Custom
+Post-simulation report	Basic score	Full report	Full + Deep Analysis
+Emotion-Aware Adaptation	No	Yes	Yes
+Emotion Timeline in debrief	No	Yes	Yes
+Weakness Pattern Memory	No	Yes	Yes
+Ghost Mode	No	No	Yes
+What-If Scenario Replay	No	Yes	Yes
+Silent Mode	No	Yes	Yes
+Pressure Multiplier	No	Yes	Yes (always on in Nightmare)
+Rambling Detection & Interruption	No	Yes	Yes
+Voice & body language analytics	No	Yes	Yes
+Interview replay	No	Yes	Yes + Download
+AI Interview Coach	No	Yes	Priority access
+Proctoring & Integrity Score	No	Yes	Yes
+Goal-based prep plans	No	Yes	Yes
+Anxiety program	No	Yes	Yes
+Verified certificates	No	Silver+	All tiers
+Multi-language simulations	No	Yes	Yes
+
+18. Build Roadmap
+V1 — Core Simulation (Months 1-3)
+•	Node.js API — auth, user profiles, CV upload, simulation management, BullMQ job queues
+•	Pipecat agent — interview flow, question bank, personas, guardrails, Pipecat Flows state machine
+•	Daily.co integration — WebRTC room management
+•	Basic evaluation — LLM scoring, per-question feedback, overall report
+•	Voice metrics — filler word detection, pace, vocal variety
+•	Proctoring foundation — face detection, tab switching, camera requirement
+•	Interview replay — full session recording with transcript
+•	Progress dashboard — basic score history
+•	Subscription system — Free and Pro tiers
+
+V2 — Intelligence & Depth (Months 4-6)
+•	Emotion-Aware Adaptation — emotion_analyzer.py, dynamic LLM modifier, emotion timeline
+•	Weakness Pattern Memory — user_memory.py, pre-simulation coaching note
+•	Pressure Multiplier — dynamic difficulty escalation mid-simulation
+•	Rambling Detection — rambling_detector.py, intelligent interruptions
+•	What-If Scenario Replay — POST /sessions/:id/replay-question endpoint
+•	Silent Mode — body language only training
+•	Body language analysis — eye contact, posture, expression
+•	Ideal answer comparison system
+•	AI Interview Coach — personalized coaching chat
+•	Goal-based preparation plans
+•	Simulation modes — Drill, Rapid Fire, Blind, Mirror, Nightmare
+•	Achievement and badge system with LinkedIn certificates
+
+V3 — Scale & Elite Features (Months 7-12)
+•	Ghost Mode — voice cloning, ideal-self audio playback
+•	Panel interview simulation — multiple AI personas
+•	Ambient realism features — waiting room, avatar, office sounds
+•	Multi-language simulation support
+•	Mobile app — native iOS and Android
+•	Kubernetes production deployment and auto-scaling
+•	Community features — leaderboards, referral system
+•	University and bootcamp B2B API access
+
+19. Open Questions & Decisions Pending
+
+#	Question	Status
+1	Primary TTS provider — Cartesia (speed) vs ElevenLabs (quality)?	Pending
+2	Emotion model — wav2vec2-emotion vs Silero vs third-party API? Latency vs accuracy tradeoff?	Pending
+3	Ghost Mode voice cloning — ElevenLabs Voice Lab consent flow and legal review per region?	Pending
+4	Ideal answer system — Claude-generated per question or human-curated library?	Pending
+5	Interviewer avatar — 2D animated vs 3D vs static image with lip sync?	Pending
+6	Multi-language V1 scope — which languages to support first?	Pending
+7	Mobile app timing — V2 or V3?	Pending
+8	Certificate verification — platform-hosted or blockchain?	Pending
+9	Benchmarking data — how large does user base need to be for meaningful percentiles?	Pending
+10	Rambling threshold tuning — what token count + semantic repetition score triggers interruption?	Pending
+
+20. Glossary
+
+Term	Definition
+Pipecat	Open-source Python framework for building real-time voice AI pipelines — used as a microservice
+Node.js Backend	The main API server handling all business logic, auth, data, and job queues
+BullMQ	Node.js-native job queue library backed by Redis — replaces Celery in this stack
+Prisma	Type-safe ORM for Node.js used to interact with PostgreSQL
+STT	Speech-to-Text — converts candidate speech to text for LLM processing
+TTS	Text-to-Speech — converts LLM response text to spoken audio
+LLM	Large Language Model — the AI brain powering the interviewer intelligence
+Emotion Analyzer	On-device wav2vec2 or Silero model that detects stress and emotion from voice in real time
+Stress Level	A 0.0-1.0 score output by the emotion analyzer, injected into the LLM prompt as context
+Pressure Multiplier	Dynamic difficulty escalation system that makes the interview harder when the candidate performs too well
+Rambling Detector	Pipecat processor that monitors token count and semantic repetition to decide when to interrupt
+Ghost Mode	Post-simulation mode where the candidate hears ideal answers spoken in their own cloned voice
+What-If Replay	Interactive post-simulation feature allowing candidate to re-run any question with an alternate answer
+Silent Mode	Simulation mode with no agent voice — feedback covers body language only
+Weakness Memory	Cross-session pattern tracking that injects personalized coaching into the agent before each simulation
+Integrity Score	Proctoring metric showing how closely simulation conditions matched a real interview
+STAR Method	Situation, Task, Action, Result — structured framework for behavioral interview answers
+Question Bank	Pre-generated, approved set of questions loaded into the agent before simulation starts
+Ghost Voice Clone	ElevenLabs-generated voice model based on the user's own voice — used only in Ghost Mode with consent
+
+Intervue AI — PRD v3.0 — Emotion-Aware, Multi-Mode, Node.js Backend — Confidential
+Train Hard. Interview Fearlessly.

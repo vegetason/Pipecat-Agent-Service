@@ -1,0 +1,73 @@
+{
+  "simulation_id": "dev-sim-001",
+  "room_url": "https://intervue.daily.co/dev-room-001",
+  "persona": "corporate_executive",
+  "mode": "full",
+  "difficulty": "hard",
+  "pressure_multiplier": true,
+  "weakness_memory": true,
+  "duration_minutes": 30,
+
+  "candidate_profile": {
+    "name": "Alex Johnson",
+    "target_role": "Senior Product Manager",
+    "target_seniority": "senior",
+    "cv_text": "5 years at Google as PM on Search. Led a team of 8 engineers to ship a feature used by 200M users. Previously at a Series B startup as first PM hire. MBA from LBS. Strong background in data-driven product decisions and stakeholder management.",
+    "skills": ["product strategy", "roadmapping", "data analysis", "stakeholder management", "agile"],
+    "voice_clone_id": null
+  },
+
+  "question_bank": [
+    {
+      "id": 1,
+      "question": "Tell me about yourself and why you are interested in this role.",
+      "type": "behavioral",
+      "expected_keywords": ["experience", "product", "impact", "role"],
+      "follow_up_bank": [
+        "What specifically about this company attracted you?",
+        "How does this role fit into your longer-term career goals?"
+      ]
+    },
+    {
+      "id": 2,
+      "question": "Describe a product you launched from zero to one. What was your process?",
+      "type": "behavioral",
+      "expected_keywords": ["discovery", "users", "metrics", "ship", "iteration"],
+      "follow_up_bank": [
+        "What would you do differently now?",
+        "How did you decide what NOT to build?"
+      ]
+    },
+    {
+      "id": 3,
+      "question": "How do you prioritize your roadmap when engineering capacity is limited?",
+      "type": "technical",
+      "expected_keywords": ["framework", "impact", "effort", "stakeholders", "tradeoffs"],
+      "follow_up_bank": [
+        "Give me a concrete example where you had to cut something important.",
+        "How do you handle pushback from a VP who wants their pet feature prioritized?"
+      ]
+    }
+  ],
+
+  "escalation_bank": [
+    "Let me stop you there — what is the core assumption you are making?",
+    "That works in ideal conditions. What if your lead engineer quit mid-project?",
+    "You said users wanted that — how do you actually know that?"
+  ],
+
+  "weakness_patterns": [
+    {
+      "type": "rambling",
+      "trigger_question_type": "behavioral",
+      "frequency": 3,
+      "coaching_note": "You tend to ramble on open-ended behavioral questions. Today, aim to answer in under 90 seconds using the STAR method."
+    },
+    {
+      "type": "filler_words",
+      "trigger_question_type": "technical",
+      "frequency": 2,
+      "coaching_note": "You use 'basically' and 'kind of' frequently on technical questions. It undermines your confidence. Replace them with a brief pause."
+    }
+  ]
+}
