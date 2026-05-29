@@ -1,0 +1,59 @@
+modules = ["python-3.12", "web"]
+[agent]
+expertMode = true
+stack = "BEST_EFFORT_FALLBACK"
+
+[nix]
+channel = "stable-25_05"
+packages = ["pkg-config"]
+
+[userenv]
+
+[userenv.shared]
+APP_ENV = "development"
+AGENT_HOST = "0.0.0.0"
+AGENT_PORT = "5000"
+NODEJS_API_URL = "http://localhost:3000"
+NODEJS_WS_URL = "ws://localhost:3000"
+INTERNAL_API_SECRET = "dev-secret-change-in-prod"
+GROQ_MODEL = "llama-3.1-8b-instant"
+LIVEKIT_URL = "wss://your-project.livekit.cloud"
+LIVEKIT_API_KEY = "placeholder"
+LIVEKIT_API_SECRET = "placeholder"
+LIVEKIT_BOT_IDENTITY = "interviewer"
+DEEPGRAM_API_KEY = "placeholder"
+GROQ_API_KEY = "gsk-placeholder"
+CARTESIA_API_KEY = "placeholder"
+ELEVENLABS_API_KEY = "placeholder"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "uvicorn main:app --host 0.0.0.0 --port 5000 --reload"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
