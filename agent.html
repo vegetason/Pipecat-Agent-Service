@@ -183,7 +183,7 @@
       <strong>Intervue</strong>
       <span>Agent Test Console</span>
     </div>
-    <span style="color:var(--dim);font-family:var(--mono);font-size:11px" id="cfg-url">http://localhost:8000</span>
+    <span style="color:var(--dim);font-family:var(--mono);font-size:11px" id="cfg-url"></span>
     <div class="hstatus">
       <div class="dot" id="sdot"></div>
       <span id="stxt">checking</span>
@@ -335,7 +335,7 @@ How do you prioritize your roadmap when capacity is limited?</textarea>
 </div>
 
 <script>
-const BASE = 'http://localhost:8000';
+const BASE = window.location.origin;
 let simId = null, activeRoom = null, currentRoomName = null;
 let filter = 'all', calls = 0, oks = 0, errs = 0;
 let micMuted = false, agentSpeaking = false;
@@ -614,6 +614,7 @@ function setRoomIdle() {
 
 // ── Boot ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('cfg-url').textContent = BASE;
   previewPayload();
   addEntry('info','BOOT','Console ready. Click Health, then Start, then Join Room.');
   checkHealth();

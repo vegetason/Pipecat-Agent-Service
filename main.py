@@ -7,6 +7,7 @@ Entry point for the Intervue AI Pipecat agent service.
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from config import config
 from utils.logger import setup_logging
@@ -25,6 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.get("/")(lambda: FileResponse("agent.html", media_type="text/html"))
 app.get("/health")(health)
 app.post("/start")(start_simulation)
 app.post("/end")(end_simulation)
