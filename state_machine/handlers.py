@@ -52,3 +52,14 @@ async def handle_silence(ctx: dict, snapshot: SessionSnapshot, speak: SpeakFn) -
     else:
         await speak("Let's move on.")
         snapshot.current_state = InterviewState.TRANSITIONING
+
+
+async def handle_wrap_up(ctx: dict, snapshot: SessionSnapshot, speak: SpeakFn) -> None:
+    prompt = build_system_prompt(ctx)
+    instruction = (
+        f"{prompt}\n\nThe interview is now complete. Close it out naturally — "
+        f"thank the candidate warmly but professionally, describe fictional next steps "
+        f"(e.g. 'We will be in touch within the week'), and say goodbye."
+    )
+    await speak(instruction)
+    snapshot.current_state = InterviewState.COMPLETED

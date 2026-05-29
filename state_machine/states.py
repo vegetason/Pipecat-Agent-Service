@@ -19,6 +19,7 @@ class InterviewState(Enum):
     FOLLOW_UP     = auto()   # Agent asking a follow-up question
     ESCALATING    = auto()   # Pressure multiplier — hardest challenge
     TRANSITIONING = auto()   # Moving to next question
+    WRAP_UP       = auto()   # Closing pleasantries + fictional next steps
     COMPLETED     = auto()   # Simulation finished
 
 

@@ -12,7 +12,7 @@ from typing import Callable, Awaitable
 from state_machine.states import InterviewState, SessionSnapshot
 from state_machine.transitions import next_state_after_listening
 from state_machine.handlers import (
-    handle_waiting_room, handle_intro, handle_questioning, handle_silence,
+    handle_waiting_room, handle_intro, handle_questioning, handle_silence, handle_wrap_up,
 )
 from state_machine.challenge_handlers import (
     handle_challenging, handle_follow_up, handle_escalating, handle_transitioning,
@@ -76,6 +76,8 @@ async def run_interview(
             await handle_escalating(ctx, snap, speak)
         elif state == InterviewState.TRANSITIONING:
             await handle_transitioning(ctx, snap, speak)
+        elif state == InterviewState.WRAP_UP:
+            await handle_wrap_up(ctx, snap, speak)
 
     sim_log.info("Interview flow completed", total_questions=total)
 

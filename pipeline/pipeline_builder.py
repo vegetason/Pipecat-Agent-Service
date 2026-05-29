@@ -46,14 +46,16 @@ async def build_and_run(ctx: dict) -> None:
     snap = SessionSnapshot(simulation_id=sim_id)
     speak = make_speak_fn(tts_queue, sim_id)
 
+    if ctx.get("weakness_memory") and ctx.get("user_id"):
+        from services.user_memory import fetch_weakness_patterns
+        ctx["weakness_patterns"] = await fetch_weakness_patterns(ctx["user_id"])
+
     active_modes = await apply_mode(ctx, tts, speak, ws_emit)
     sim_log.info("Modes applied", modes=active_modes)
 
     emotion, rambling, silence, _ = create_processors(sim_id, ctx, snap, speak, ws_emit)
     on_candidate_speech = make_on_candidate_speech(ctx, snap, speak, ws_emit)
 
-    # TranscriptRouter replaces the broken @stt.event_handler("on_transcription_message")
-    # pipecat 1.3 pushes TranscriptionFrame through the pipeline — not via events.
     router = TranscriptRouter(sim_id, snap, on_candidate_speech, ws_emit)
 
     runner = PipelineRunner()
@@ -61,15 +63,13 @@ async def build_and_run(ctx: dict) -> None:
     @transport.event_handler("on_participant_left")
     async def on_left(participant: dict, reason: str):
         sim_log.info("Candidate left room", reason=reason)
-        # Mark COMPLETED so run_interview and drain_tts_queue exit their loops.
-        # Without this, asyncio.gather() hangs waiting for them after runner stops.
-        snap.current_state = InterviewState.COMPLETED
+        snap.current_state = InterviewState.COMPLETED  # unblocks gather coroutines
         await runner.stop()
 
     pipeline = Pipeline([
         transport.input(),
         stt,
-        router,      # catches TranscriptionFrame → state machine
+        router,
         emotion,
         rambling,
         silence,

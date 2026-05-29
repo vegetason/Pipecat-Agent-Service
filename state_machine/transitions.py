@@ -48,8 +48,8 @@ def next_state_after_listening(
         return InterviewState.FOLLOW_UP
 
     if is_final_question(snapshot, total_questions):
-        log.info("Final question done → COMPLETED", simulation_id=sim_id)
-        return InterviewState.COMPLETED
+        log.info("Final question done → WRAP_UP", simulation_id=sim_id)
+        return InterviewState.WRAP_UP
 
     log.info("Moving to next question → TRANSITIONING", simulation_id=sim_id)
     return InterviewState.TRANSITIONING
