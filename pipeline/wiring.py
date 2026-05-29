@@ -24,7 +24,8 @@ def wire_pipeline(
     async def on_transcript(message: dict):
         transcript = message.get("text", "").strip()
         if transcript:
-            ws_emit("transcript_chunk", {
+            # FIX: was ws_emit(...) without await — transcript chunks were silently dropped
+            await ws_emit("transcript_chunk", {
                 "simulation_id": sim_id,
                 "text": transcript,
             })

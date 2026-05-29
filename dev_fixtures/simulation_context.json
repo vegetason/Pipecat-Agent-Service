@@ -1,6 +1,9 @@
 {
   "simulation_id": "dev-sim-001",
-  "room_url": "https://intervue.daily.co/dev-room-001",
+  "livekit_url": "wss://your-project.livekit.cloud",
+  "livekit_room": "dev-room-001",
+  "livekit_token": "",
+  "participant_url": "",
   "persona": "corporate_executive",
   "mode": "full",
   "difficulty": "hard",

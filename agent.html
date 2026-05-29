@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intervue Agent Test Console</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --panel: #12161b;
+    --panel-2: #171c22;
+    --line: #28313b;
+    --text: #ecf2f8;
+    --muted: #92a0ad;
+    --dim: #657380;
+    --accent: #34d399;
+    --accent-2: #60a5fa;
+    --warn: #fbbf24;
+    --danger: #fb7185;
+    --input: #0e1217;
+    --shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+    --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+  }
+
+  button, input, textarea, select {
+    font: inherit;
+  }
+
+  .app {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: 64px 1fr;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(18, 22, 27, 0.96);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 220px;
+  }
+
+  .brand strong {
+    font-size: 15px;
+    letter-spacing: 0.02em;
+  }
+
+  .brand span {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .target {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--dim);
+  }
+
+  .dot.online {
+    background: var(--accent);
+    box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.12);
+  }
+
+  .dot.offline {
+    background: var(--danger);
+    box-shadow: 0 0 0 5px rgba(251, 113, 133, 0.12);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(360px, 460px) minmax(420px, 1fr);
+    gap: 18px;
+    padding: 18px;
+    min-height: 0;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    min-width: 0;
+  }
+
+  .left {
+    overflow: auto;
+    max-height: calc(100vh - 100px);
+  }
+
+  .panel-head {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .panel-title {
+    margin: 0;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .panel-subtitle {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .section {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .section:last-child {
+    border-bottom: 0;
+  }
+
+  .section-title {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .field.full {
+    grid-column: 1 / -1;
+  }
+
+  label {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 650;
+  }
+
+  input, textarea, select {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: var(--input);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 10px 11px;
+    outline: none;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 90px;
+    line-height: 1.5;
+  }
+
+  .mono {
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .checks {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .check input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .actions.three {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .btn {
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: border-color 0.16s, background 0.16s, color 0.16s, transform 0.08s;
+  }
+
+  .btn:hover {
+    border-color: var(--accent-2);
+  }
+
+  .btn:active {
+    transform: translateY(1px);
+  }
+
+  .btn.primary {
+    border-color: rgba(52, 211, 153, 0.55);
+    background: rgba(52, 211, 153, 0.14);
+    color: #b7f7d8;
+  }
+
+  .btn.danger {
+    border-color: rgba(251, 113, 133, 0.55);
+    background: rgba(251, 113, 133, 0.12);
+    color: #fecdd3;
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .workspace {
+    display: grid;
+    grid-template-rows: minmax(320px, 42vh) minmax(280px, 1fr);
+    gap: 18px;
+    min-height: 0;
+  }
+
+  .room {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-height: 0;
+  }
+
+  .room-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .room-stage {
+    min-height: 0;
+    background: #05070a;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #room-frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: none;
+    background: #05070a;
+  }
+
+  .empty-room {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 32px;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .empty-room strong {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text);
+    font-size: 18px;
+  }
+
+  .log-panel {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .filter {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .filter.active {
+    color: var(--text);
+    border-color: var(--accent-2);
+    background: rgba(96, 165, 250, 0.12);
+  }
+
+  #log {
+    min-height: 0;
+    overflow: auto;
+    padding: 8px 0;
+  }
+
+  .entry {
+    display: grid;
+    grid-template-columns: 86px 82px minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px 18px;
+    border-left: 3px solid transparent;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .entry:hover {
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  .entry.info { border-left-color: var(--accent); }
+  .entry.warn { border-left-color: var(--warn); }
+  .entry.error { border-left-color: var(--danger); }
+  .entry.request { border-left-color: #a78bfa; }
+  .entry.event { border-left-color: var(--accent-2); }
+
+  .time { color: var(--dim); }
+  .tag { color: var(--muted); font-weight: 800; }
+  .msg { color: var(--text); min-width: 0; overflow-wrap: anywhere; }
+
+  .entry pre {
+    margin: 8px 0 0;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--input);
+    color: #d7e0e9;
+    overflow: auto;
+    white-space: pre-wrap;
+  }
+
+  .log-foot {
+    border-top: 1px solid var(--line);
+    padding: 12px 18px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 12px;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .stat {
+    background: var(--input);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px;
+  }
+
+  .stat strong {
+    display: block;
+    color: var(--accent);
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .stat span {
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  @media (max-width: 980px) {
+    .layout {
+      grid-template-columns: 1fr;
+    }
+
+    .left {
+      max-height: none;
+    }
+
+    .workspace {
+      grid-template-rows: 360px 520px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <strong>Intervue Agent Console</strong>
+      <span>Pipecat local conversation test</span>
+    </div>
+    <div class="target">
+      <span>API</span>
+      <strong id="cfg-url">http://localhost:8000</strong>
+    </div>
+    <div class="status">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">checking</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel left">
+      <div class="panel-head">
+        <div>
+          <h1 class="panel-title">Start Payload</h1>
+          <p class="panel-subtitle">Data sent to POST /start</p>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="actions three">
+          <button class="btn" id="btn-health" onclick="checkHealth()">Health</button>
+          <button class="btn primary" id="btn-start" onclick="startSim()">Start</button>
+          <button class="btn danger" id="btn-end" onclick="endSim()" disabled>End</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Session</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="payload-sim-id">Simulation ID</label>
+            <input id="payload-sim-id" value="dev-sim-001">
+          </div>
+          <div class="field">
+            <label for="payload-duration">Duration</label>
+            <input id="payload-duration" type="number" min="1" value="30">
+          </div>
+          <div class="field full">
+            <label for="payload-livekit-url">LiveKit URL</label>
+            <input id="payload-livekit-url" value="wss://your-project.livekit.cloud">
+          </div>
+          <div class="field">
+            <label for="payload-livekit-room">LiveKit Room</label>
+            <input id="payload-livekit-room" value="dev-room-001">
+          </div>
+          <div class="field full">
+            <label for="payload-livekit-token">Bot Token</label>
+            <input id="payload-livekit-token" placeholder="Optional if LIVEKIT_API_KEY and LIVEKIT_API_SECRET are set">
+          </div>
+          <div class="field full">
+            <label for="payload-participant-url">Participant URL</label>
+            <input id="payload-participant-url" placeholder="Optional LiveKit Meet URL to open in the test console">
+          </div>
+          <div class="field">
+            <label for="payload-persona">Persona</label>
+            <select id="payload-persona">
+              <option value="corporate_executive">Corporate executive</option>
+              <option value="technical_interviewer">Technical interviewer</option>
+              <option value="friendly_recruiter">Friendly recruiter</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="payload-mode">Mode</label>
+            <select id="payload-mode">
+              <option value="full">Full</option>
+              <option value="practice">Practice</option>
+              <option value="ghost">Ghost</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="payload-difficulty">Difficulty</label>
+            <select id="payload-difficulty">
+              <option value="hard">Hard</option>
+              <option value="medium">Medium</option>
+              <option value="easy">Easy</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="payload-role">Target Role</label>
+            <input id="payload-role" value="Senior Product Manager">
+          </div>
+        </div>
+        <div class="checks">
+          <label class="check"><input id="payload-pressure" type="checkbox" checked> Pressure multiplier</label>
+          <label class="check"><input id="payload-memory" type="checkbox" checked> Weakness memory</label>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Candidate</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="payload-name">Name</label>
+            <input id="payload-name" value="Alex Johnson">
+          </div>
+          <div class="field">
+            <label for="payload-seniority">Seniority</label>
+            <select id="payload-seniority">
+              <option value="senior">Senior</option>
+              <option value="mid">Mid</option>
+              <option value="junior">Junior</option>
+              <option value="lead">Lead</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="payload-skills">Skills, comma separated</label>
+            <input id="payload-skills" value="product strategy, roadmapping, data analysis, stakeholder management">
+          </div>
+          <div class="field full">
+            <label for="payload-cv">CV Context</label>
+            <textarea id="payload-cv">5 years at Google as PM on Search. Led a team of 8 engineers to ship a feature used by 200M users. Previously at a Series B startup as first PM hire. Strong background in product strategy and stakeholder management.</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Interview Questions</h2>
+        <div class="field">
+          <label for="payload-questions">One question per line</label>
+          <textarea id="payload-questions">Tell me about yourself and why you are interested in this role.
+Describe a product you launched from zero to one. What was your process?
+How do you prioritize your roadmap when engineering capacity is limited?</textarea>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="actions">
+          <button class="btn" onclick="refreshPayloadPreview()">Preview JSON</button>
+          <button class="btn" onclick="fillFixtureDefaults()">Reset Defaults</button>
+        </div>
+        <div class="field" style="margin-top: 12px;">
+          <label for="payload-json">JSON Preview</label>
+          <textarea class="mono" id="payload-json" readonly></textarea>
+        </div>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <section class="panel room">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Conversation Room</h2>
+            <p class="panel-subtitle" id="room-url-label">No active room</p>
+          </div>
+          <div class="room-actions">
+            <button class="btn" id="btn-open-room" onclick="openRoom()" disabled>Open Room</button>
+          </div>
+        </div>
+        <div class="room-stage">
+          <iframe id="room-frame" allow="camera; microphone; autoplay; display-capture" allowfullscreen></iframe>
+          <div class="empty-room" id="room-placeholder">
+            <div>
+              <strong>Start a session to join the LiveKit room.</strong>
+              <span>The agent joins with the bot token. Use the participant URL for your browser conversation.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel log-panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Event Log</h2>
+            <p class="panel-subtitle" id="sim-id-display">no active simulation</p>
+          </div>
+          <div class="filters">
+            <button class="filter active" onclick="setFilter('all', this)">All</button>
+            <button class="filter" onclick="setFilter('request', this)">Req</button>
+            <button class="filter" onclick="setFilter('info', this)">Info</button>
+            <button class="filter" onclick="setFilter('warn', this)">Warn</button>
+            <button class="filter" onclick="setFilter('error', this)">Err</button>
+            <button class="filter" onclick="clearLog()">Clear</button>
+          </div>
+        </div>
+
+        <div id="log"></div>
+
+        <div class="log-foot">
+          <span id="entry-count">0 entries</span>
+          <div class="stats">
+            <div class="stat"><strong id="stat-calls">0</strong><span>calls</span></div>
+            <div class="stat"><strong id="stat-2xx">0</strong><span>2xx</span></div>
+            <div class="stat"><strong id="stat-errors">0</strong><span>errors</span></div>
+            <div class="stat"><strong id="stat-ms">-</strong><span>last ms</span></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+const BASE = 'http://localhost:8000';
+let simId = null;
+let roomUrl = '';
+let filter = 'all';
+let calls = 0;
+let successes = 0;
+let errors = 0;
+
+const DEFAULTS = {
+  simulation_id: 'dev-sim-001',
+  livekit_url: 'wss://your-project.livekit.cloud',
+  livekit_room: 'dev-room-001',
+  livekit_token: '',
+  participant_url: '',
+  persona: 'corporate_executive',
+  mode: 'full',
+  difficulty: 'hard',
+  duration_minutes: 30,
+  pressure_multiplier: true,
+  weakness_memory: true,
+  candidate_profile: {
+    name: 'Alex Johnson',
+    target_role: 'Senior Product Manager',
+    target_seniority: 'senior',
+    cv_text: '5 years at Google as PM on Search. Led a team of 8 engineers to ship a feature used by 200M users. Previously at a Series B startup as first PM hire. Strong background in product strategy and stakeholder management.',
+    skills: ['product strategy', 'roadmapping', 'data analysis', 'stakeholder management'],
+    voice_clone_id: null,
+  },
+  question_bank: [
+    'Tell me about yourself and why you are interested in this role.',
+    'Describe a product you launched from zero to one. What was your process?',
+    'How do you prioritize your roadmap when engineering capacity is limited?',
+  ],
+};
+
+function now() {
+  return new Date().toTimeString().slice(0, 8);
+}
+
+function text(value) {
+  return document.createTextNode(value);
+}
+
+function addEntry(type, tag, message, body) {
+  const log = document.getElementById('log');
+  const entry = document.createElement('div');
+  entry.className = `entry ${type}`;
+  entry.dataset.type = type;
+
+  const time = document.createElement('span');
+  time.className = 'time';
+  time.appendChild(text(now()));
+
+  const tagEl = document.createElement('span');
+  tagEl.className = 'tag';
+  tagEl.appendChild(text(tag));
+
+  const msg = document.createElement('span');
+  msg.className = 'msg';
+  msg.appendChild(text(message));
+
+  if (body !== undefined) {
+    const pre = document.createElement('pre');
+    pre.appendChild(text(JSON.stringify(body, null, 2)));
+    msg.appendChild(pre);
+  }
+
+  entry.append(time, tagEl, msg);
+  if (filter !== 'all' && type !== filter) entry.style.display = 'none';
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+  document.getElementById('entry-count').textContent = `${log.querySelectorAll('.entry').length} entries`;
+}
+
+function setFilter(next, button) {
+  filter = next;
+  document.querySelectorAll('.filter').forEach(item => item.classList.remove('active'));
+  button.classList.add('active');
+  document.querySelectorAll('#log .entry').forEach(entry => {
+    entry.style.display = next === 'all' || entry.dataset.type === next ? '' : 'none';
+  });
+}
+
+function clearLog() {
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('entry-count').textContent = '0 entries';
+}
+
+function bumpStats(ok, ms) {
+  calls += 1;
+  if (ok) successes += 1;
+  else errors += 1;
+
+  document.getElementById('stat-calls').textContent = calls;
+  document.getElementById('stat-2xx').textContent = successes;
+  document.getElementById('stat-errors').textContent = errors;
+  document.getElementById('stat-ms').textContent = `${ms}ms`;
+}
+
+function lines(value) {
+  return value.split('\n').map(item => item.trim()).filter(Boolean);
+}
+
+function csv(value) {
+  return value.split(',').map(item => item.trim()).filter(Boolean);
+}
+
+function makeQuestionBank(items) {
+  return items.map((question, index) => ({
+    id: index + 1,
+    question,
+    type: index === 0 ? 'behavioral' : 'technical',
+    expected_keywords: [],
+    follow_up_bank: [],
+  }));
+}
+
+function buildStartPayload() {
+  const questions = lines(document.getElementById('payload-questions').value);
+  const livekitUrl = document.getElementById('payload-livekit-url').value.trim();
+  const livekitRoom = document.getElementById('payload-livekit-room').value.trim();
+  const livekitToken = document.getElementById('payload-livekit-token').value.trim();
+  const participantUrl = document.getElementById('payload-participant-url').value.trim();
+
+  if (!livekitUrl) throw new Error('LiveKit URL is required.');
+  if (!livekitRoom) throw new Error('LiveKit room is required.');
+  if (!questions.length) throw new Error('Add at least one interview question.');
+
+  return {
+    simulation_id: document.getElementById('payload-sim-id').value.trim() || `sim-${Date.now()}`,
+    livekit_url: livekitUrl,
+    livekit_room: livekitRoom,
+    livekit_token: livekitToken,
+    participant_url: participantUrl,
+    persona: document.getElementById('payload-persona').value,
+    mode: document.getElementById('payload-mode').value,
+    difficulty: document.getElementById('payload-difficulty').value,
+    pressure_multiplier: document.getElementById('payload-pressure').checked,
+    weakness_memory: document.getElementById('payload-memory').checked,
+    duration_minutes: Number(document.getElementById('payload-duration').value || 30),
+    candidate_profile: {
+      name: document.getElementById('payload-name').value.trim(),
+      target_role: document.getElementById('payload-role').value.trim(),
+      target_seniority: document.getElementById('payload-seniority').value,
+      cv_text: document.getElementById('payload-cv').value.trim(),
+      skills: csv(document.getElementById('payload-skills').value),
+      voice_clone_id: null,
+    },
+    question_bank: makeQuestionBank(questions),
+    escalation_bank: [
+      'Let me stop you there. What is the core assumption you are making?',
+      'That works in ideal conditions. What would you do if the project lost half its engineering capacity?',
+      'How do you know users actually wanted that?',
+    ],
+    weakness_patterns: [],
+  };
+}
+
+function refreshPayloadPreview() {
+  try {
+    const payload = buildStartPayload();
+    document.getElementById('payload-json').value = JSON.stringify(payload, null, 2);
+    return payload;
+  } catch (err) {
+    addEntry('error', 'FORM', err.message);
+    return null;
+  }
+}
+
+function fillFixtureDefaults() {
+  document.getElementById('payload-sim-id').value = DEFAULTS.simulation_id;
+  document.getElementById('payload-livekit-url').value = DEFAULTS.livekit_url;
+  document.getElementById('payload-livekit-room').value = DEFAULTS.livekit_room;
+  document.getElementById('payload-livekit-token').value = DEFAULTS.livekit_token;
+  document.getElementById('payload-participant-url').value = DEFAULTS.participant_url;
+  document.getElementById('payload-persona').value = DEFAULTS.persona;
+  document.getElementById('payload-mode').value = DEFAULTS.mode;
+  document.getElementById('payload-difficulty').value = DEFAULTS.difficulty;
+  document.getElementById('payload-duration').value = DEFAULTS.duration_minutes;
+  document.getElementById('payload-pressure').checked = DEFAULTS.pressure_multiplier;
+  document.getElementById('payload-memory').checked = DEFAULTS.weakness_memory;
+  document.getElementById('payload-name').value = DEFAULTS.candidate_profile.name;
+  document.getElementById('payload-role').value = DEFAULTS.candidate_profile.target_role;
+  document.getElementById('payload-seniority').value = DEFAULTS.candidate_profile.target_seniority;
+  document.getElementById('payload-skills').value = DEFAULTS.candidate_profile.skills.join(', ');
+  document.getElementById('payload-cv').value = DEFAULTS.candidate_profile.cv_text;
+  document.getElementById('payload-questions').value = DEFAULTS.question_bank.join('\n');
+  refreshPayloadPreview();
+}
+
+async function apiCall(method, path, body = null) {
+  const url = BASE + path;
+  addEntry('request', method, url, body || undefined);
+
+  const started = performance.now();
+  try {
+    const opts = { method };
+    if (body !== null) {
+      opts.headers = { 'Content-Type': 'application/json' };
+      opts.body = JSON.stringify(body);
+    }
+
+    const res = await fetch(url, opts);
+    const ms = Math.round(performance.now() - started);
+    const data = await res.json().catch(() => ({}));
+    bumpStats(res.ok, ms);
+    addEntry(res.ok ? 'info' : 'error', String(res.status), `${path} responded in ${ms}ms`, data);
+    return { ok: res.ok, data };
+  } catch (err) {
+    const ms = Math.round(performance.now() - started);
+    bumpStats(false, ms);
+    addEntry('error', 'NET', `Could not reach ${url}. Confirm the FastAPI server is running.`);
+    return { ok: false, data: null };
+  }
+}
+
+async function checkHealth() {
+  const result = await apiCall('GET', '/health');
+  const dot = document.getElementById('status-dot');
+  const label = document.getElementById('status-text');
+
+  if (result.ok) {
+    dot.className = 'dot online';
+    label.textContent = `online - ${result.data.env || 'unknown env'}`;
+  } else {
+    dot.className = 'dot offline';
+    label.textContent = 'offline';
+  }
+}
+
+async function startSim() {
+  const payload = refreshPayloadPreview();
+  if (!payload) return;
+
+  const result = await apiCall('POST', '/start', payload);
+  if (!result.ok || !result.data.simulation_id) return;
+
+  simId = result.data.simulation_id;
+  document.getElementById('btn-end').disabled = false;
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('sim-id-display').textContent = `active simulation: ${simId}`;
+  addEntry('event', 'SIM', `Simulation started: ${simId}`);
+  loadRoom(result.data.participant_url || payload.participant_url, result.data.livekit_room || payload.livekit_room);
+}
+
+async function endSim() {
+  if (!simId) return;
+
+  const current = simId;
+  const result = await apiCall('POST', '/end', { simulation_id: current });
+  if (!result.ok) return;
+
+  addEntry('event', 'END', `Simulation ended: ${current}`);
+  document.getElementById('btn-end').disabled = true;
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('sim-id-display').textContent = 'no active simulation';
+  simId = null;
+}
+
+function loadRoom(url, roomName) {
+  roomUrl = url || '';
+  const frame = document.getElementById('room-frame');
+  const placeholder = document.getElementById('room-placeholder');
+  const button = document.getElementById('btn-open-room');
+  const label = document.getElementById('room-url-label');
+
+  if (url) {
+    frame.src = url;
+    frame.style.display = 'block';
+    placeholder.style.display = 'none';
+    button.disabled = false;
+    label.textContent = url;
+  } else {
+    frame.style.display = 'none';
+    placeholder.style.display = '';
+    button.disabled = true;
+    label.textContent = `LiveKit room ready: ${roomName}`;
+  }
+  addEntry('event', 'ROOM', `LiveKit room ready: ${roomName || url}`);
+}
+
+function openRoom() {
+  if (roomUrl) window.open(roomUrl, '_blank', 'noopener,noreferrer');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  fillFixtureDefaults();
+  addEntry('info', 'BOOT', 'Test console ready.');
+  checkHealth();
+
+  [
+    'payload-sim-id',
+    'payload-duration',
+    'payload-livekit-url',
+    'payload-livekit-room',
+    'payload-livekit-token',
+    'payload-participant-url',
+    'payload-persona',
+    'payload-mode',
+    'payload-difficulty',
+    'payload-role',
+    'payload-pressure',
+    'payload-memory',
+    'payload-name',
+    'payload-seniority',
+    'payload-skills',
+    'payload-cv',
+    'payload-questions',
+  ].forEach(id => {
+    document.getElementById(id).addEventListener('input', refreshPayloadPreview);
+    document.getElementById(id).addEventListener('change', refreshPayloadPreview);
+  });
+});
+</script>
+</body>
+</html>

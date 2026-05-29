@@ -4,31 +4,28 @@ uvicorn[standard]>=0.30.0
 python-dotenv>=1.0.0
 
 # ── Pipecat core + provider extras ────────────────────────────────────────
-# daily      → WebRTC transport
 # deepgram   → STT
 # cartesia   → TTS (primary)
 # elevenlabs → TTS + voice cloning (Ghost Mode)
 # silero     → on-device emotion / VAD
-pipecat-ai[daily,deepgram,cartesia,elevenlabs,silero]>=0.0.48
+pipecat-ai[deepgram,cartesia,elevenlabs,livekit,silero]>=1.2.1
+pyjwt>=2.10.1
 
-# ── Anthropic LLM ──────────────────────────────────────────────────────────
-anthropic>=0.28.0
+# ── Groq LLM ───────────────────────────────────────────────────────────────
+groq>=0.11.0
 
-# ── Async HTTP (Node.js API calls & WebSocket transport) ──────────────────
+# ── Async HTTP ─────────────────────────────────────────────────────────────
 httpx>=0.27.0
 websockets>=12.0
 
 # ── NLP — Rambling Detector ───────────────────────────────────────────────
-# Sentence embeddings for semantic-repetition detection
 sentence-transformers>=3.0.0
 numpy>=1.26.0
 
 # ── Emotion Analysis ──────────────────────────────────────────────────────
-# wav2vec2-emotion model via HuggingFace Transformers
-# torch kept CPU-only in the agent container (no GPU needed at this scale)
 transformers>=4.41.0
 torch>=2.3.0
 torchaudio>=2.3.0
 
-# ── ElevenLabs (direct SDK for voice cloning beyond pipecat wrapper) ───────
+# ── ElevenLabs SDK ────────────────────────────────────────────────────────
 elevenlabs>=1.3.0

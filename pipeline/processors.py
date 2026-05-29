@@ -6,8 +6,8 @@ These are Pipecat frame processors that sit inside the pipeline.
 Imported by pipeline_builder.py only.
 """
 
-from pipecat.services.deepgram import DeepgramSTTService
-from pipecat.services.cartesia import CartesiaTTSService
+from pipecat.services.deepgram.stt import DeepgramSTTService
+from pipecat.services.cartesia.tts import CartesiaTTSService
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.transcriptions.language import Language
 

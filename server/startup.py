@@ -17,7 +17,7 @@ from utils.error_handler import ContextError
 
 log = get_logger(__name__)
 
-_REQUIRED_FIELDS = ["simulation_id", "room_url", "persona", "mode", "question_bank"]
+_REQUIRED_FIELDS = ["simulation_id", "livekit_room", "persona", "mode", "question_bank"]
 
 
 def make_lifespan() -> callable:

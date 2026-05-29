@@ -28,7 +28,11 @@ async def start_simulation(request: Request):
     Boot a simulation. Called by Node.js when a user starts an interview.
     Validates the context, then runs the pipeline as a background task.
     """
-    ctx = load_dev_fixture() if config.is_dev else await request.json()
+    try:
+        body = await request.json()
+    except ValueError:
+        body = {}
+    ctx = load_dev_fixture() if config.is_dev and not body else body
 
     try:
         validate_context(ctx)
@@ -38,10 +42,20 @@ async def start_simulation(request: Request):
     sim_log = log.bind(simulation_id=ctx["simulation_id"], persona=ctx["persona"])
     sim_log.info("Simulation start received", mode=ctx["mode"])
 
-    from pipeline.pipeline_builder import build_and_run
+    try:
+        from pipeline.pipeline_builder import build_and_run
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Agent pipeline is not ready: {e}")
+
     asyncio.create_task(build_and_run(ctx))
 
-    return JSONResponse({"status": "started", "simulation_id": ctx["simulation_id"]})
+    return JSONResponse({
+        "status": "started",
+        "simulation_id": ctx["simulation_id"],
+        "livekit_url": ctx.get("livekit_url") or config.livekit.url,
+        "livekit_room": ctx.get("livekit_room"),
+        "participant_url": ctx.get("participant_url"),
+    })
 
 
 async def end_simulation(request: Request):

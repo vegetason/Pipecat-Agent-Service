@@ -24,7 +24,8 @@ class TranscriptLogger:
         self._log = log.bind(simulation_id=simulation_id)
 
     async def connect(self) -> None:
-        url = f"{config.node_api.ws_url}/api/v1/sessions/{self._sim_id}/stream"
+        # FIX: was config.node_api.ws_url — field is named websocket_url in NodeAPIConfig
+        url = f"{config.node_api.websocket_url}/api/v1/sessions/{self._sim_id}/stream"
         try:
             self._ws = await websockets.connect(
                 url,

@@ -9,8 +9,11 @@ from config.helpers import require, optional, optional_int, optional_float
 
 
 @dataclass
-class DailyConfig:
-    api_key: str = field(default_factory=lambda: require("DAILY_API_KEY"))
+class LiveKitConfig:
+    url: str = field(default_factory=lambda: optional("LIVEKIT_URL", ""))
+    api_key: str = field(default_factory=lambda: optional("LIVEKIT_API_KEY", ""))
+    api_secret: str = field(default_factory=lambda: optional("LIVEKIT_API_SECRET", ""))
+    bot_identity: str = field(default_factory=lambda: optional("LIVEKIT_BOT_IDENTITY", "interviewer"))
 
 
 @dataclass
@@ -25,19 +28,19 @@ class DeepgramConfig:
 
 
 @dataclass
-class ClaudeConfig:
-    api_key: str = field(default_factory=lambda: require("ANTHROPIC_API_KEY"))
+class GroqConfig:
+    api_key: str = field(default_factory=lambda: require("GROQ_API_KEY"))
     model: str = field(
-        default_factory=lambda: optional("CLAUDE_MODEL", "claude-opus-4-5-20251001")
+        default_factory=lambda: optional("GROQ_MODEL", "llama-3.1-8b-instant")
     )
     # Short for natural interviewer responses
-    max_tokens: int = field(default_factory=lambda: optional_int("CLAUDE_MAX_TOKENS", 300))
+    max_tokens: int = field(default_factory=lambda: optional_int("GROQ_MAX_TOKENS", 300))
     # Longer for Ghost Mode ideal answer generation
     ghost_mode_max_tokens: int = field(
-        default_factory=lambda: optional_int("CLAUDE_GHOST_MAX_TOKENS", 800)
+        default_factory=lambda: optional_int("GROQ_GHOST_MAX_TOKENS", 800)
     )
     temperature: float = field(
-        default_factory=lambda: optional_float("CLAUDE_TEMPERATURE", 0.7)
+        default_factory=lambda: optional_float("GROQ_TEMPERATURE", 0.7)
     )
 
 

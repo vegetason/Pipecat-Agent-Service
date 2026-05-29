@@ -28,6 +28,7 @@ StateCb = Callable[[InterviewState], Awaitable[None]]
 async def run_interview(
     ctx: dict,
     speak: SpeakFn,
+    snap: SessionSnapshot,           # FIX: accept shared snap from pipeline_builder
     on_state_change: StateCb | None = None,
 ) -> None:
     """
@@ -36,11 +37,16 @@ async def run_interview(
     Args:
         ctx:             Full simulation context dict.
         speak:           Async fn — wired to Claude + TTS by pipeline_builder.
+        snap:            Shared SessionSnapshot — MUST be the same object passed to
+                         make_on_candidate_speech so state changes are visible to both.
         on_state_change: Optional callback fired on every state change.
     """
+    # FIX: removed internal `snap = SessionSnapshot(simulation_id=sim_id)` creation.
+    # Previously, run_interview had its own private snap that was never updated by
+    # handle_answer_received (which received pipeline_builder's snap). The while loop
+    # checked its own snap.current_state which never reached COMPLETED — infinite loop.
     sim_id = ctx["simulation_id"]
     total  = len(ctx.get("question_bank", []))
-    snap   = SessionSnapshot(simulation_id=sim_id)
     sim_log = log.bind(simulation_id=sim_id)
 
     async def go(state: InterviewState) -> None:
@@ -85,5 +91,5 @@ async def handle_answer_received(
 async def handle_silence_detected(
     ctx: dict, snap: SessionSnapshot, speak: SpeakFn
 ) -> None:
-    """Called by pipeline_builder when the silence timeout fires."""
+    """Called by SilenceDetector when the VAD silence timeout fires."""
     await handle_silence(ctx, snap, speak)

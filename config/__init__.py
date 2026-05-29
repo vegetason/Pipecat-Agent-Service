@@ -5,7 +5,7 @@ Assembles all config sections into one Config object.
 Every file in the codebase imports like this:
 
     from config import config
-    config.claude.api_key
+    config.groq.api_key
     config.emotion.high_stress_threshold
 """
 
@@ -14,9 +14,9 @@ from config.helpers import optional
 
 from config.server import ServerConfig, NodeAPIConfig
 from config.providers import (
-    DailyConfig,
+    LiveKitConfig,
     DeepgramConfig,
-    ClaudeConfig,
+    GroqConfig,
     CartesiaConfig,
     ElevenLabsConfig,
 )
@@ -28,9 +28,9 @@ from config.simulation import SimulationConfig, FeatureFlags
 class Config:
     server: ServerConfig = field(default_factory=ServerConfig)
     node_api: NodeAPIConfig = field(default_factory=NodeAPIConfig)
-    daily: DailyConfig = field(default_factory=DailyConfig)
+    livekit: LiveKitConfig = field(default_factory=LiveKitConfig)
     deepgram: DeepgramConfig = field(default_factory=DeepgramConfig)
-    claude: ClaudeConfig = field(default_factory=ClaudeConfig)
+    groq: GroqConfig = field(default_factory=GroqConfig)
     cartesia: CartesiaConfig = field(default_factory=CartesiaConfig)
     elevenlabs: ElevenLabsConfig = field(default_factory=ElevenLabsConfig)
     emotion: EmotionConfig = field(default_factory=EmotionConfig)
