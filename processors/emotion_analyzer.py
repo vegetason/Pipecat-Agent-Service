@@ -40,10 +40,16 @@ class EmotionAnalyzer(FrameProcessor):
         self._last_sample_time = time.monotonic()
         self._log = log.bind(simulation_id=simulation_id)
 
-    async def process_frame(self, frame: AudioRawFrame, direction):
-        """Collect audio frames. Sample periodically for emotion analysis."""
-        await self.push_frame(frame, direction)   # always pass through first
+    async def process_frame(self, frame, direction):
+        # CRITICAL: call super() first so StartFrame/CancelFrame/etc. are handled
+        # by the base class. Without this, __started is never set to True and
+        # every frame triggers "_check_started" errors.
+        await super().process_frame(frame, direction)
 
+        # Always pass every frame through to the next processor.
+        await self.push_frame(frame, direction)
+
+        # Only do emotion analysis on audio frames.
         if not isinstance(frame, AudioRawFrame):
             return
 

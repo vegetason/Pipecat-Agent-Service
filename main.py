@@ -2,9 +2,6 @@
 main.py
 -------
 Entry point for the Intervue AI Pipecat agent service.
-Node.js calls POST /start to boot a simulation.
-
-In development, POST /start loads from dev_fixtures/simulation_context.json.
 """
 
 import uvicorn
@@ -15,6 +12,7 @@ from config import config
 from utils.logger import setup_logging
 from server.startup import make_lifespan
 from server.routes import health, start_simulation, end_simulation
+from server.token_route import participant_token
 
 setup_logging(config.env)
 
@@ -30,6 +28,7 @@ app.add_middleware(
 app.get("/health")(health)
 app.post("/start")(start_simulation)
 app.post("/end")(end_simulation)
+app.get("/participant-token")(participant_token)
 
 if __name__ == "__main__":
     uvicorn.run(

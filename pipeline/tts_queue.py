@@ -7,6 +7,8 @@ Extracted from pipeline/pipeline_builder.py.
 
 import asyncio
 
+from pipecat.frames.frames import TTSSpeakFrame
+
 from state_machine.states import InterviewState, SessionSnapshot
 from utils.logger import get_logger
 
@@ -18,6 +20,7 @@ async def drain_tts_queue(tts_queue: asyncio.Queue, tts, snap: SessionSnapshot) 
     while snap.current_state != InterviewState.COMPLETED:
         try:
             text = await asyncio.wait_for(tts_queue.get(), timeout=1.0)
-            await tts.say(text)
+            if text:
+                await tts.queue_frame(TTSSpeakFrame(text))
         except asyncio.TimeoutError:
             continue

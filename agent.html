@@ -3,462 +3,176 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Intervue Agent Test Console</title>
+<title>Intervue Agent Console</title>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
 <style>
   :root {
-    --bg: #0b0d10;
-    --panel: #12161b;
-    --panel-2: #171c22;
-    --line: #28313b;
-    --text: #ecf2f8;
-    --muted: #92a0ad;
-    --dim: #657380;
-    --accent: #34d399;
-    --accent-2: #60a5fa;
-    --warn: #fbbf24;
-    --danger: #fb7185;
+    --bg: #0b0d10; --panel: #12161b; --panel-2: #171c22; --line: #28313b;
+    --text: #ecf2f8; --muted: #92a0ad; --dim: #657380;
+    --accent: #34d399; --accent-2: #60a5fa; --warn: #fbbf24; --danger: #fb7185;
     --input: #0e1217;
-    --shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
-    --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font: Inter, ui-sans-serif, system-ui, sans-serif;
     --mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
   }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; min-height: 100vh; }
+  button, input, textarea, select { font: inherit; }
 
-  * { box-sizing: border-box; }
-
-  body {
-    margin: 0;
-    min-height: 100vh;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font);
-  }
-
-  button, input, textarea, select {
-    font: inherit;
-  }
-
-  .app {
-    min-height: 100vh;
-    display: grid;
-    grid-template-rows: 64px 1fr;
-  }
+  .app { min-height: 100vh; display: grid; grid-template-rows: 56px 1fr; }
 
   header {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    padding: 0 24px;
-    border-bottom: 1px solid var(--line);
-    background: rgba(18, 22, 27, 0.96);
-    position: sticky;
-    top: 0;
-    z-index: 5;
+    display: flex; align-items: center; gap: 16px; padding: 0 20px;
+    border-bottom: 1px solid var(--line); background: rgba(18,22,27,0.97);
+    position: sticky; top: 0; z-index: 10;
   }
-
-  .brand {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 220px;
-  }
-
-  .brand strong {
-    font-size: 15px;
-    letter-spacing: 0.02em;
-  }
-
-  .brand span {
-    color: var(--muted);
-    font-size: 12px;
-  }
-
-  .target {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 12px;
-  }
-
-  .status {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--muted);
-    font-size: 13px;
-  }
-
-  .dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 999px;
-    background: var(--dim);
-  }
-
-  .dot.online {
-    background: var(--accent);
-    box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.12);
-  }
-
-  .dot.offline {
-    background: var(--danger);
-    box-shadow: 0 0 0 5px rgba(251, 113, 133, 0.12);
-  }
+  .brand strong { font-size: 14px; letter-spacing: .02em; }
+  .brand span { color: var(--muted); font-size: 11px; margin-left: 10px; }
+  .hstatus { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); transition: background .3s, box-shadow .3s; }
+  .dot.online  { background: var(--accent); box-shadow: 0 0 0 4px rgba(52,211,153,.15); }
+  .dot.offline { background: var(--danger); }
 
   .layout {
-    display: grid;
-    grid-template-columns: minmax(360px, 460px) minmax(420px, 1fr);
-    gap: 18px;
-    padding: 18px;
-    min-height: 0;
+    display: grid; grid-template-columns: minmax(340px,420px) 1fr;
+    gap: 16px; padding: 16px; align-items: start;
   }
 
-  .panel {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-    min-width: 0;
-  }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+  .panel-head { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+  .panel-title { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 
-  .left {
-    overflow: auto;
-    max-height: calc(100vh - 100px);
-  }
+  .section { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .section:last-child { border-bottom: 0; }
+  .slabel { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 10px; }
 
-  .panel-head {
-    padding: 16px 18px;
-    border-bottom: 1px solid var(--line);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .full { grid-column: 1/-1; }
 
-  .panel-title {
-    margin: 0;
-    font-size: 14px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .panel-subtitle {
-    margin: 4px 0 0;
-    color: var(--muted);
-    font-size: 12px;
-  }
-
-  .section {
-    padding: 16px 18px;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .section:last-child {
-    border-bottom: 0;
-  }
-
-  .section-title {
-    margin: 0 0 12px;
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-  }
-
-  .field.full {
-    grid-column: 1 / -1;
-  }
-
-  label {
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 650;
-  }
-
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  label { color: var(--muted); font-size: 11px; font-weight: 600; }
   input, textarea, select {
-    width: 100%;
-    border: 1px solid var(--line);
-    background: var(--input);
-    color: var(--text);
-    border-radius: 6px;
-    padding: 10px 11px;
-    outline: none;
+    border: 1px solid var(--line); background: var(--input); color: var(--text);
+    border-radius: 5px; padding: 8px 10px; outline: none; width: 100%;
   }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent-2); box-shadow: 0 0 0 3px rgba(96,165,250,.1); }
+  textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+  .mono { font-family: var(--mono); font-size: 11px; }
 
-  input:focus, textarea:focus, select:focus {
-    border-color: var(--accent-2);
-    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
-  }
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .check { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; cursor: pointer; }
+  .check input { width: 14px; height: 14px; accent-color: var(--accent); }
 
-  textarea {
-    resize: vertical;
-    min-height: 90px;
-    line-height: 1.5;
-  }
-
-  .mono {
-    font-family: var(--mono);
-    font-size: 12px;
-  }
-
-  .checks {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 12px;
-  }
-
-  .check {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--muted);
-    font-size: 13px;
-  }
-
-  .check input {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--accent);
-  }
-
-  .actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  .actions.three {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-
+  .btns { display: grid; gap: 8px; }
+  .btns.two { grid-template-columns: 1fr 1fr; }
+  .btns.three { grid-template-columns: 1fr 1fr 1fr; }
   .btn {
-    border: 1px solid var(--line);
-    background: var(--panel-2);
-    color: var(--text);
-    border-radius: 6px;
-    padding: 10px 12px;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 12px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    transition: border-color 0.16s, background 0.16s, color 0.16s, transform 0.08s;
+    border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
+    border-radius: 5px; padding: 9px 12px; cursor: pointer; font-weight: 700;
+    font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+    transition: border-color .15s, background .15s, color .15s, transform .08s;
+  }
+  .btn:hover { border-color: var(--accent-2); }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { border-color: rgba(52,211,153,.5); background: rgba(52,211,153,.1); color: #b7f7d8; }
+  .btn.danger  { border-color: rgba(251,113,133,.5); background: rgba(251,113,133,.1); color: #fecdd3; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+  /* ── Room panel ─────────────────────────────── */
+  .room-panel { display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+
+  .room-body {
+    min-height: 220px; background: #05070a; border-radius: 0 0 0 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; padding: 24px; text-align: center;
   }
 
-  .btn:hover {
-    border-color: var(--accent-2);
-  }
+  .room-idle { color: var(--muted); }
+  .room-idle strong { display: block; font-size: 15px; color: var(--text); margin-bottom: 6px; }
 
-  .btn:active {
-    transform: translateY(1px);
-  }
+  .room-connected { width: 100%; }
 
-  .btn.primary {
-    border-color: rgba(52, 211, 153, 0.55);
-    background: rgba(52, 211, 153, 0.14);
-    color: #b7f7d8;
+  /* Agent speaking indicator */
+  .agent-vis {
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    height: 48px; margin-bottom: 12px;
   }
-
-  .btn.danger {
-    border-color: rgba(251, 113, 133, 0.55);
-    background: rgba(251, 113, 133, 0.12);
-    color: #fecdd3;
+  .bar {
+    width: 4px; border-radius: 2px; background: var(--accent);
+    animation: none; opacity: .3; height: 8px; transition: height .1s;
   }
+  .agent-vis.speaking .bar { opacity: 1; animation: bounce 0.5s ease-in-out infinite alternate; }
+  .agent-vis.speaking .bar:nth-child(2) { animation-delay: .1s; }
+  .agent-vis.speaking .bar:nth-child(3) { animation-delay: .2s; }
+  .agent-vis.speaking .bar:nth-child(4) { animation-delay: .15s; }
+  .agent-vis.speaking .bar:nth-child(5) { animation-delay: .05s; }
+  @keyframes bounce { from { height: 8px; } to { height: 36px; } }
 
-  .btn:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-    transform: none;
+  .agent-label { color: var(--muted); font-size: 12px; margin-bottom: 20px; }
+  .agent-label strong { color: var(--text); }
+
+  /* Mic button */
+  .mic-btn {
+    width: 64px; height: 64px; border-radius: 50%;
+    border: 2px solid var(--accent); background: rgba(52,211,153,.1);
+    color: var(--accent); font-size: 22px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s, border-color .2s, transform .1s;
   }
+  .mic-btn:hover { background: rgba(52,211,153,.2); transform: scale(1.05); }
+  .mic-btn.muted { border-color: var(--danger); background: rgba(251,113,133,.1); color: var(--danger); }
+  .mic-label { margin-top: 8px; font-size: 11px; color: var(--muted); }
 
-  .workspace {
-    display: grid;
-    grid-template-rows: minmax(320px, 42vh) minmax(280px, 1fr);
-    gap: 18px;
-    min-height: 0;
+  /* Participants row */
+  .participants { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; justify-content: center; }
+  .participant-tag {
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    border: 1px solid var(--line); background: var(--panel-2); color: var(--muted);
   }
+  .participant-tag.self { border-color: rgba(52,211,153,.4); color: var(--accent); }
+  .participant-tag.agent { border-color: rgba(96,165,250,.4); color: var(--accent-2); }
 
-  .room {
-    display: grid;
-    grid-template-rows: auto 1fr;
-    min-height: 0;
+  .room-foot { padding: 12px 16px; border-top: 1px solid var(--line); }
+
+  /* ── Log panel ─────────────────────────────── */
+  .log-wrap {
+    display: grid; grid-template-rows: auto 1fr auto;
+    max-height: calc(100vh - 88px); min-height: 0;
   }
-
-  .room-actions {
-    display: flex;
-    gap: 10px;
-    align-items: center;
+  .log-head { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .flt {
+    border: 1px solid transparent; background: transparent; color: var(--muted);
+    border-radius: 20px; padding: 3px 10px; cursor: pointer;
+    font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
   }
+  .flt.active { color: var(--text); border-color: var(--accent-2); background: rgba(96,165,250,.1); }
+  .flt:hover { color: var(--text); }
+  #clear-btn { color: var(--dim); background: none; border: none; cursor: pointer; font-size: 11px; margin-left: auto; }
+  #clear-btn:hover { color: var(--danger); }
 
-  .room-stage {
-    min-height: 0;
-    background: #05070a;
-    border-radius: 0 0 8px 8px;
-    overflow: hidden;
-    position: relative;
-  }
-
-  #room-frame {
-    width: 100%;
-    height: 100%;
-    border: 0;
-    display: none;
-    background: #05070a;
-  }
-
-  .empty-room {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    padding: 32px;
-    text-align: center;
-    color: var(--muted);
-  }
-
-  .empty-room strong {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--text);
-    font-size: 18px;
-  }
-
-  .log-panel {
-    min-height: 0;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-  }
-
-  .filters {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .filter {
-    border: 1px solid var(--line);
-    background: transparent;
-    color: var(--muted);
-    border-radius: 999px;
-    padding: 5px 10px;
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .filter.active {
-    color: var(--text);
-    border-color: var(--accent-2);
-    background: rgba(96, 165, 250, 0.12);
-  }
-
-  #log {
-    min-height: 0;
-    overflow: auto;
-    padding: 8px 0;
-  }
-
+  #log { overflow-y: auto; padding: 4px 0; }
   .entry {
-    display: grid;
-    grid-template-columns: 86px 82px minmax(0, 1fr);
-    gap: 8px;
-    padding: 8px 18px;
-    border-left: 3px solid transparent;
-    font-family: var(--mono);
-    font-size: 12px;
+    display: grid; grid-template-columns: 80px 72px minmax(0,1fr);
+    gap: 8px; padding: 6px 16px; border-left: 3px solid transparent;
+    font-family: var(--mono); font-size: 11px;
   }
-
-  .entry:hover {
-    background: rgba(255, 255, 255, 0.025);
-  }
-
-  .entry.info { border-left-color: var(--accent); }
-  .entry.warn { border-left-color: var(--warn); }
-  .entry.error { border-left-color: var(--danger); }
+  .entry:hover { background: rgba(255,255,255,.02); }
+  .entry.info    { border-left-color: var(--accent); }
+  .entry.warn    { border-left-color: var(--warn); }
+  .entry.error   { border-left-color: var(--danger); }
   .entry.request { border-left-color: #a78bfa; }
-  .entry.event { border-left-color: var(--accent-2); }
+  .entry.event   { border-left-color: var(--accent-2); }
+  .etime { color: var(--dim); } .etag { color: var(--muted); font-weight: 800; }
+  .emsg { color: var(--text); overflow-wrap: anywhere; }
+  .entry pre { margin: 6px 0 0; padding: 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--input); white-space: pre-wrap; }
 
-  .time { color: var(--dim); }
-  .tag { color: var(--muted); font-weight: 800; }
-  .msg { color: var(--text); min-width: 0; overflow-wrap: anywhere; }
+  .log-foot { padding: 10px 16px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 11px; }
+  .stats { display: flex; gap: 16px; margin-left: auto; }
+  .stat strong { color: var(--accent); }
 
-  .entry pre {
-    margin: 8px 0 0;
-    padding: 10px;
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    background: var(--input);
-    color: #d7e0e9;
-    overflow: auto;
-    white-space: pre-wrap;
-  }
-
-  .log-foot {
-    border-top: 1px solid var(--line);
-    padding: 12px 18px;
-    color: var(--muted);
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    font-size: 12px;
-  }
-
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-  }
-
-  .stat {
-    background: var(--input);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    padding: 10px;
-  }
-
-  .stat strong {
-    display: block;
-    color: var(--accent);
-    font-size: 20px;
-    line-height: 1;
-  }
-
-  .stat span {
-    color: var(--muted);
-    font-size: 11px;
-  }
-
-  @media (max-width: 980px) {
-    .layout {
-      grid-template-columns: 1fr;
-    }
-
-    .left {
-      max-height: none;
-    }
-
-    .workspace {
-      grid-template-rows: 360px 520px;
-    }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .log-wrap { max-height: 560px; }
   }
 </style>
 </head>
@@ -466,513 +180,447 @@
 <div class="app">
   <header>
     <div class="brand">
-      <strong>Intervue Agent Console</strong>
-      <span>Pipecat local conversation test</span>
+      <strong>Intervue</strong>
+      <span>Agent Test Console</span>
     </div>
-    <div class="target">
-      <span>API</span>
-      <strong id="cfg-url">http://localhost:8000</strong>
-    </div>
-    <div class="status">
-      <span class="dot" id="status-dot"></span>
-      <span id="status-text">checking</span>
+    <span style="color:var(--dim);font-family:var(--mono);font-size:11px" id="cfg-url">http://localhost:8000</span>
+    <div class="hstatus">
+      <div class="dot" id="sdot"></div>
+      <span id="stxt">checking</span>
     </div>
   </header>
 
   <div class="layout">
-    <aside class="panel left">
-      <div class="panel-head">
-        <div>
-          <h1 class="panel-title">Start Payload</h1>
-          <p class="panel-subtitle">Data sent to POST /start</p>
-        </div>
-      </div>
 
-      <div class="section">
-        <div class="actions three">
-          <button class="btn" id="btn-health" onclick="checkHealth()">Health</button>
-          <button class="btn primary" id="btn-start" onclick="startSim()">Start</button>
-          <button class="btn danger" id="btn-end" onclick="endSim()" disabled>End</button>
-        </div>
-      </div>
+    <!-- ── Left: controls ────────────────────── -->
+    <aside>
 
-      <div class="section">
-        <h2 class="section-title">Session</h2>
-        <div class="grid">
-          <div class="field">
-            <label for="payload-sim-id">Simulation ID</label>
-            <input id="payload-sim-id" value="dev-sim-001">
-          </div>
-          <div class="field">
-            <label for="payload-duration">Duration</label>
-            <input id="payload-duration" type="number" min="1" value="30">
-          </div>
-          <div class="field full">
-            <label for="payload-livekit-url">LiveKit URL</label>
-            <input id="payload-livekit-url" value="wss://your-project.livekit.cloud">
-          </div>
-          <div class="field">
-            <label for="payload-livekit-room">LiveKit Room</label>
-            <input id="payload-livekit-room" value="dev-room-001">
-          </div>
-          <div class="field full">
-            <label for="payload-livekit-token">Bot Token</label>
-            <input id="payload-livekit-token" placeholder="Optional if LIVEKIT_API_KEY and LIVEKIT_API_SECRET are set">
-          </div>
-          <div class="field full">
-            <label for="payload-participant-url">Participant URL</label>
-            <input id="payload-participant-url" placeholder="Optional LiveKit Meet URL to open in the test console">
-          </div>
-          <div class="field">
-            <label for="payload-persona">Persona</label>
-            <select id="payload-persona">
-              <option value="corporate_executive">Corporate executive</option>
-              <option value="technical_interviewer">Technical interviewer</option>
-              <option value="friendly_recruiter">Friendly recruiter</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="payload-mode">Mode</label>
-            <select id="payload-mode">
-              <option value="full">Full</option>
-              <option value="practice">Practice</option>
-              <option value="ghost">Ghost</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="payload-difficulty">Difficulty</label>
-            <select id="payload-difficulty">
-              <option value="hard">Hard</option>
-              <option value="medium">Medium</option>
-              <option value="easy">Easy</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="payload-role">Target Role</label>
-            <input id="payload-role" value="Senior Product Manager">
-          </div>
-        </div>
-        <div class="checks">
-          <label class="check"><input id="payload-pressure" type="checkbox" checked> Pressure multiplier</label>
-          <label class="check"><input id="payload-memory" type="checkbox" checked> Weakness memory</label>
-        </div>
-      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">Controls</span></div>
 
-      <div class="section">
-        <h2 class="section-title">Candidate</h2>
-        <div class="grid">
-          <div class="field">
-            <label for="payload-name">Name</label>
-            <input id="payload-name" value="Alex Johnson">
-          </div>
-          <div class="field">
-            <label for="payload-seniority">Seniority</label>
-            <select id="payload-seniority">
-              <option value="senior">Senior</option>
-              <option value="mid">Mid</option>
-              <option value="junior">Junior</option>
-              <option value="lead">Lead</option>
-            </select>
-          </div>
-          <div class="field full">
-            <label for="payload-skills">Skills, comma separated</label>
-            <input id="payload-skills" value="product strategy, roadmapping, data analysis, stakeholder management">
-          </div>
-          <div class="field full">
-            <label for="payload-cv">CV Context</label>
-            <textarea id="payload-cv">5 years at Google as PM on Search. Led a team of 8 engineers to ship a feature used by 200M users. Previously at a Series B startup as first PM hire. Strong background in product strategy and stakeholder management.</textarea>
+        <div class="section">
+          <div class="btns three">
+            <button class="btn" onclick="checkHealth()">Health</button>
+            <button class="btn primary" id="btn-start" onclick="startSim()">Start</button>
+            <button class="btn danger"  id="btn-end"   onclick="endSim()" disabled>End</button>
           </div>
         </div>
-      </div>
 
-      <div class="section">
-        <h2 class="section-title">Interview Questions</h2>
-        <div class="field">
-          <label for="payload-questions">One question per line</label>
-          <textarea id="payload-questions">Tell me about yourself and why you are interested in this role.
-Describe a product you launched from zero to one. What was your process?
-How do you prioritize your roadmap when engineering capacity is limited?</textarea>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="actions">
-          <button class="btn" onclick="refreshPayloadPreview()">Preview JSON</button>
-          <button class="btn" onclick="fillFixtureDefaults()">Reset Defaults</button>
-        </div>
-        <div class="field" style="margin-top: 12px;">
-          <label for="payload-json">JSON Preview</label>
-          <textarea class="mono" id="payload-json" readonly></textarea>
-        </div>
-      </div>
-    </aside>
-
-    <main class="workspace">
-      <section class="panel room">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">Conversation Room</h2>
-            <p class="panel-subtitle" id="room-url-label">No active room</p>
+        <div class="section">
+          <div class="slabel">Session</div>
+          <div class="grid2">
+            <div class="field"><label>Simulation ID</label><input id="f-simid" value="dev-sim-001"></div>
+            <div class="field"><label>Duration (min)</label><input id="f-dur" type="number" value="30"></div>
+            <div class="field full"><label>LiveKit URL</label><input id="f-lkurl" value="wss://your-project.livekit.cloud"></div>
+            <div class="field"><label>LiveKit Room</label><input id="f-room" value="dev-room-001"></div>
+            <div class="field"><label>Persona</label>
+              <select id="f-persona">
+                <option value="corporate_executive">Corporate Executive</option>
+                <option value="big_tech_engineer">Big Tech Engineer</option>
+                <option value="startup_founder">Startup Founder</option>
+                <option value="devils_advocate">Devil's Advocate</option>
+                <option value="friendly_trap">Friendly Trap</option>
+                <option value="silent_type">Silent Type</option>
+              </select>
+            </div>
+            <div class="field"><label>Mode</label>
+              <select id="f-mode">
+                <option value="full">Full</option>
+                <option value="rapid_fire">Rapid Fire</option>
+                <option value="nightmare">Nightmare</option>
+                <option value="warmup">Warmup</option>
+              </select>
+            </div>
+            <div class="field"><label>Difficulty</label>
+              <select id="f-diff">
+                <option value="hard">Hard</option>
+                <option value="standard">Standard</option>
+                <option value="nightmare">Nightmare</option>
+              </select>
+            </div>
+            <div class="field"><label>Target Role</label><input id="f-role" value="Senior Product Manager"></div>
           </div>
-          <div class="room-actions">
-            <button class="btn" id="btn-open-room" onclick="openRoom()" disabled>Open Room</button>
+          <div class="checks">
+            <label class="check"><input id="f-pressure" type="checkbox" checked> Pressure multiplier</label>
+            <label class="check"><input id="f-memory"   type="checkbox" checked> Weakness memory</label>
           </div>
         </div>
-        <div class="room-stage">
-          <iframe id="room-frame" allow="camera; microphone; autoplay; display-capture" allowfullscreen></iframe>
-          <div class="empty-room" id="room-placeholder">
-            <div>
-              <strong>Start a session to join the LiveKit room.</strong>
-              <span>The agent joins with the bot token. Use the participant URL for your browser conversation.</span>
+
+        <div class="section">
+          <div class="slabel">Candidate</div>
+          <div class="grid2">
+            <div class="field"><label>Name</label><input id="f-name" value="Alex Johnson"></div>
+            <div class="field"><label>Seniority</label>
+              <select id="f-sen">
+                <option value="senior">Senior</option>
+                <option value="mid">Mid</option>
+                <option value="junior">Junior</option>
+              </select>
+            </div>
+            <div class="field full"><label>CV Summary</label>
+              <textarea id="f-cv">5 years at Google as PM on Search. Led a team of 8 engineers. Previously at a Series B startup as first PM hire.</textarea>
             </div>
           </div>
         </div>
-      </section>
 
-      <section class="panel log-panel">
+        <div class="section">
+          <div class="slabel">Questions (one per line)</div>
+          <textarea id="f-qs" style="min-height:88px">Tell me about yourself and why you are interested in this role.
+Describe a product you launched from zero to one.
+How do you prioritize your roadmap when capacity is limited?</textarea>
+        </div>
+
+        <div class="section">
+          <div class="btns two" style="margin-bottom:10px">
+            <button class="btn" onclick="previewPayload()">Preview JSON</button>
+            <button class="btn" onclick="resetDefaults()">Reset</button>
+          </div>
+          <textarea class="mono" id="f-json" readonly style="min-height:80px;font-size:10px"></textarea>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ── Right: room + log ──────────────────── -->
+    <div style="display:grid;gap:16px;grid-template-rows:auto 1fr;min-height:0">
+
+      <!-- Room panel -->
+      <div class="panel room-panel">
         <div class="panel-head">
-          <div>
-            <h2 class="panel-title">Event Log</h2>
-            <p class="panel-subtitle" id="sim-id-display">no active simulation</p>
+          <span class="panel-title">LiveKit Room</span>
+          <span id="room-status-label" style="font-size:11px;color:var(--dim)">not connected</span>
+        </div>
+
+        <div class="room-body" id="room-body">
+          <div class="room-idle">
+            <strong>Start a simulation to connect</strong>
+            The agent will join the LiveKit room. Click Start, then join below.
           </div>
+        </div>
+
+        <div class="room-foot">
+          <div class="btns two">
+            <button class="btn" id="btn-join" onclick="joinRoom()" disabled>Join Room</button>
+            <button class="btn danger" id="btn-leave" onclick="leaveRoom()" disabled>Leave Room</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Log panel -->
+      <div class="panel log-wrap">
+        <div class="log-head">
           <div class="filters">
-            <button class="filter active" onclick="setFilter('all', this)">All</button>
-            <button class="filter" onclick="setFilter('request', this)">Req</button>
-            <button class="filter" onclick="setFilter('info', this)">Info</button>
-            <button class="filter" onclick="setFilter('warn', this)">Warn</button>
-            <button class="filter" onclick="setFilter('error', this)">Err</button>
-            <button class="filter" onclick="clearLog()">Clear</button>
+            <button class="flt active" onclick="setFilter('all',this)">All</button>
+            <button class="flt" onclick="setFilter('request',this)">Req</button>
+            <button class="flt" onclick="setFilter('info',this)">Info</button>
+            <button class="flt" onclick="setFilter('warn',this)">Warn</button>
+            <button class="flt" onclick="setFilter('error',this)">Err</button>
           </div>
+          <button id="clear-btn" onclick="clearLog()">clear</button>
         </div>
-
-        <div id="log"></div>
-
+        <div id="log" style="min-height:200px"></div>
         <div class="log-foot">
-          <span id="entry-count">0 entries</span>
+          <span id="ecount">0 entries</span>
           <div class="stats">
-            <div class="stat"><strong id="stat-calls">0</strong><span>calls</span></div>
-            <div class="stat"><strong id="stat-2xx">0</strong><span>2xx</span></div>
-            <div class="stat"><strong id="stat-errors">0</strong><span>errors</span></div>
-            <div class="stat"><strong id="stat-ms">-</strong><span>last ms</span></div>
+            <span><strong id="sc">0</strong> calls</span>
+            <span><strong id="s2">0</strong> 2xx</span>
+            <span><strong id="se">0</strong> err</span>
+            <span><strong id="sms">—</strong> ms</span>
           </div>
         </div>
-      </section>
-    </main>
+      </div>
+
+    </div>
   </div>
 </div>
 
 <script>
 const BASE = 'http://localhost:8000';
-let simId = null;
-let roomUrl = '';
-let filter = 'all';
-let calls = 0;
-let successes = 0;
-let errors = 0;
+let simId = null, activeRoom = null, currentRoomName = null;
+let filter = 'all', calls = 0, oks = 0, errs = 0;
+let micMuted = false, agentSpeaking = false;
 
-const DEFAULTS = {
-  simulation_id: 'dev-sim-001',
-  livekit_url: 'wss://your-project.livekit.cloud',
-  livekit_room: 'dev-room-001',
-  livekit_token: '',
-  participant_url: '',
-  persona: 'corporate_executive',
-  mode: 'full',
-  difficulty: 'hard',
-  duration_minutes: 30,
-  pressure_multiplier: true,
-  weakness_memory: true,
-  candidate_profile: {
-    name: 'Alex Johnson',
-    target_role: 'Senior Product Manager',
-    target_seniority: 'senior',
-    cv_text: '5 years at Google as PM on Search. Led a team of 8 engineers to ship a feature used by 200M users. Previously at a Series B startup as first PM hire. Strong background in product strategy and stakeholder management.',
-    skills: ['product strategy', 'roadmapping', 'data analysis', 'stakeholder management'],
-    voice_clone_id: null,
-  },
-  question_bank: [
-    'Tell me about yourself and why you are interested in this role.',
-    'Describe a product you launched from zero to one. What was your process?',
-    'How do you prioritize your roadmap when engineering capacity is limited?',
-  ],
-};
+// ── Log ──────────────────────────────────────────────────────────────────
+function ts() { return new Date().toTimeString().slice(0,8); }
 
-function now() {
-  return new Date().toTimeString().slice(0, 8);
-}
-
-function text(value) {
-  return document.createTextNode(value);
-}
-
-function addEntry(type, tag, message, body) {
+function addEntry(type, tag, msg, body) {
   const log = document.getElementById('log');
-  const entry = document.createElement('div');
-  entry.className = `entry ${type}`;
-  entry.dataset.type = type;
-
-  const time = document.createElement('span');
-  time.className = 'time';
-  time.appendChild(text(now()));
-
-  const tagEl = document.createElement('span');
-  tagEl.className = 'tag';
-  tagEl.appendChild(text(tag));
-
-  const msg = document.createElement('span');
-  msg.className = 'msg';
-  msg.appendChild(text(message));
-
+  const el = document.createElement('div');
+  el.className = `entry ${type}`; el.dataset.type = type;
+  const t = document.createElement('span'); t.className='etime'; t.textContent = ts();
+  const tg = document.createElement('span'); tg.className='etag'; tg.textContent = tag;
+  const m = document.createElement('span'); m.className='emsg'; m.textContent = msg;
   if (body !== undefined) {
     const pre = document.createElement('pre');
-    pre.appendChild(text(JSON.stringify(body, null, 2)));
-    msg.appendChild(pre);
+    pre.textContent = JSON.stringify(body, null, 2);
+    m.appendChild(pre);
   }
-
-  entry.append(time, tagEl, msg);
-  if (filter !== 'all' && type !== filter) entry.style.display = 'none';
-  log.appendChild(entry);
-  log.scrollTop = log.scrollHeight;
-  document.getElementById('entry-count').textContent = `${log.querySelectorAll('.entry').length} entries`;
+  el.append(t, tg, m);
+  if (filter !== 'all' && type !== filter) el.style.display = 'none';
+  log.appendChild(el); log.scrollTop = log.scrollHeight;
+  document.getElementById('ecount').textContent = `${log.querySelectorAll('.entry').length} entries`;
 }
 
-function setFilter(next, button) {
-  filter = next;
-  document.querySelectorAll('.filter').forEach(item => item.classList.remove('active'));
-  button.classList.add('active');
-  document.querySelectorAll('#log .entry').forEach(entry => {
-    entry.style.display = next === 'all' || entry.dataset.type === next ? '' : 'none';
+function setFilter(f, btn) {
+  filter = f;
+  document.querySelectorAll('.flt').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#log .entry').forEach(e => {
+    e.style.display = f === 'all' || e.dataset.type === f ? '' : 'none';
   });
 }
 
 function clearLog() {
   document.getElementById('log').innerHTML = '';
-  document.getElementById('entry-count').textContent = '0 entries';
+  document.getElementById('ecount').textContent = '0 entries';
 }
 
-function bumpStats(ok, ms) {
-  calls += 1;
-  if (ok) successes += 1;
-  else errors += 1;
-
-  document.getElementById('stat-calls').textContent = calls;
-  document.getElementById('stat-2xx').textContent = successes;
-  document.getElementById('stat-errors').textContent = errors;
-  document.getElementById('stat-ms').textContent = `${ms}ms`;
+function bump(ok, ms) {
+  calls++; if (ok) oks++; else errs++;
+  document.getElementById('sc').textContent  = calls;
+  document.getElementById('s2').textContent  = oks;
+  document.getElementById('se').textContent  = errs;
+  document.getElementById('sms').textContent = ms + 'ms';
 }
 
-function lines(value) {
-  return value.split('\n').map(item => item.trim()).filter(Boolean);
+// ── API ──────────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  addEntry('request', method, BASE + path, body);
+  const t0 = performance.now();
+  try {
+    const opts = { method };
+    if (body) { opts.headers = {'Content-Type':'application/json'}; opts.body = JSON.stringify(body); }
+    const res = await fetch(BASE + path, opts);
+    const ms = Math.round(performance.now() - t0);
+    const data = await res.json().catch(() => ({}));
+    bump(res.ok, ms);
+    addEntry(res.ok ? 'info' : 'error', String(res.status), `${path} → ${ms}ms`, data);
+    return { ok: res.ok, data };
+  } catch (e) {
+    bump(false, Math.round(performance.now() - t0));
+    addEntry('error', 'NET', `Cannot reach ${BASE} — is the agent running?`);
+    return { ok: false, data: null };
+  }
 }
 
-function csv(value) {
-  return value.split(',').map(item => item.trim()).filter(Boolean);
+// ── Health ───────────────────────────────────────────────────────────────
+async function checkHealth() {
+  const { ok, data } = await api('GET', '/health');
+  const dot = document.getElementById('sdot');
+  const txt = document.getElementById('stxt');
+  dot.className = 'dot ' + (ok ? 'online' : 'offline');
+  txt.textContent = ok ? `online · ${data.env}` : 'offline';
 }
 
-function makeQuestionBank(items) {
-  return items.map((question, index) => ({
-    id: index + 1,
-    question,
-    type: index === 0 ? 'behavioral' : 'technical',
-    expected_keywords: [],
-    follow_up_bank: [],
-  }));
-}
-
-function buildStartPayload() {
-  const questions = lines(document.getElementById('payload-questions').value);
-  const livekitUrl = document.getElementById('payload-livekit-url').value.trim();
-  const livekitRoom = document.getElementById('payload-livekit-room').value.trim();
-  const livekitToken = document.getElementById('payload-livekit-token').value.trim();
-  const participantUrl = document.getElementById('payload-participant-url').value.trim();
-
-  if (!livekitUrl) throw new Error('LiveKit URL is required.');
-  if (!livekitRoom) throw new Error('LiveKit room is required.');
-  if (!questions.length) throw new Error('Add at least one interview question.');
-
+// ── Payload ──────────────────────────────────────────────────────────────
+function buildPayload() {
+  const qs = document.getElementById('f-qs').value.split('\n').map(s=>s.trim()).filter(Boolean);
   return {
-    simulation_id: document.getElementById('payload-sim-id').value.trim() || `sim-${Date.now()}`,
-    livekit_url: livekitUrl,
-    livekit_room: livekitRoom,
-    livekit_token: livekitToken,
-    participant_url: participantUrl,
-    persona: document.getElementById('payload-persona').value,
-    mode: document.getElementById('payload-mode').value,
-    difficulty: document.getElementById('payload-difficulty').value,
-    pressure_multiplier: document.getElementById('payload-pressure').checked,
-    weakness_memory: document.getElementById('payload-memory').checked,
-    duration_minutes: Number(document.getElementById('payload-duration').value || 30),
+    simulation_id: document.getElementById('f-simid').value.trim() || `sim-${Date.now()}`,
+    livekit_url:   document.getElementById('f-lkurl').value.trim(),
+    livekit_room:  document.getElementById('f-room').value.trim(),
+    persona:       document.getElementById('f-persona').value,
+    mode:          document.getElementById('f-mode').value,
+    difficulty:    document.getElementById('f-diff').value,
+    pressure_multiplier: document.getElementById('f-pressure').checked,
+    weakness_memory:     document.getElementById('f-memory').checked,
+    duration_minutes:    Number(document.getElementById('f-dur').value) || 30,
     candidate_profile: {
-      name: document.getElementById('payload-name').value.trim(),
-      target_role: document.getElementById('payload-role').value.trim(),
-      target_seniority: document.getElementById('payload-seniority').value,
-      cv_text: document.getElementById('payload-cv').value.trim(),
-      skills: csv(document.getElementById('payload-skills').value),
-      voice_clone_id: null,
+      name: document.getElementById('f-name').value.trim(),
+      target_role: document.getElementById('f-role').value.trim(),
+      target_seniority: document.getElementById('f-sen').value,
+      cv_text: document.getElementById('f-cv').value.trim(),
+      skills: [], voice_clone_id: null,
     },
-    question_bank: makeQuestionBank(questions),
+    question_bank: qs.map((q, i) => ({
+      id: i+1, question: q,
+      type: i === 0 ? 'behavioral' : 'technical',
+      expected_keywords: [], follow_up_bank: [],
+    })),
     escalation_bank: [
-      'Let me stop you there. What is the core assumption you are making?',
-      'That works in ideal conditions. What would you do if the project lost half its engineering capacity?',
-      'How do you know users actually wanted that?',
+      "What is the core assumption you are making?",
+      "What if your lead engineer quit mid-project?",
+      "How do you know users actually wanted that?",
     ],
     weakness_patterns: [],
   };
 }
 
-function refreshPayloadPreview() {
+function previewPayload() {
   try {
-    const payload = buildStartPayload();
-    document.getElementById('payload-json').value = JSON.stringify(payload, null, 2);
-    return payload;
-  } catch (err) {
-    addEntry('error', 'FORM', err.message);
-    return null;
-  }
+    document.getElementById('f-json').value = JSON.stringify(buildPayload(), null, 2);
+  } catch(e) { addEntry('error','FORM', e.message); }
 }
 
-function fillFixtureDefaults() {
-  document.getElementById('payload-sim-id').value = DEFAULTS.simulation_id;
-  document.getElementById('payload-livekit-url').value = DEFAULTS.livekit_url;
-  document.getElementById('payload-livekit-room').value = DEFAULTS.livekit_room;
-  document.getElementById('payload-livekit-token').value = DEFAULTS.livekit_token;
-  document.getElementById('payload-participant-url').value = DEFAULTS.participant_url;
-  document.getElementById('payload-persona').value = DEFAULTS.persona;
-  document.getElementById('payload-mode').value = DEFAULTS.mode;
-  document.getElementById('payload-difficulty').value = DEFAULTS.difficulty;
-  document.getElementById('payload-duration').value = DEFAULTS.duration_minutes;
-  document.getElementById('payload-pressure').checked = DEFAULTS.pressure_multiplier;
-  document.getElementById('payload-memory').checked = DEFAULTS.weakness_memory;
-  document.getElementById('payload-name').value = DEFAULTS.candidate_profile.name;
-  document.getElementById('payload-role').value = DEFAULTS.candidate_profile.target_role;
-  document.getElementById('payload-seniority').value = DEFAULTS.candidate_profile.target_seniority;
-  document.getElementById('payload-skills').value = DEFAULTS.candidate_profile.skills.join(', ');
-  document.getElementById('payload-cv').value = DEFAULTS.candidate_profile.cv_text;
-  document.getElementById('payload-questions').value = DEFAULTS.question_bank.join('\n');
-  refreshPayloadPreview();
+function resetDefaults() {
+  document.getElementById('f-simid').value = 'dev-sim-001';
+  document.getElementById('f-lkurl').value = 'wss://your-project.livekit.cloud';
+  document.getElementById('f-room').value  = 'dev-room-001';
+  previewPayload();
 }
 
-async function apiCall(method, path, body = null) {
-  const url = BASE + path;
-  addEntry('request', method, url, body || undefined);
-
-  const started = performance.now();
-  try {
-    const opts = { method };
-    if (body !== null) {
-      opts.headers = { 'Content-Type': 'application/json' };
-      opts.body = JSON.stringify(body);
-    }
-
-    const res = await fetch(url, opts);
-    const ms = Math.round(performance.now() - started);
-    const data = await res.json().catch(() => ({}));
-    bumpStats(res.ok, ms);
-    addEntry(res.ok ? 'info' : 'error', String(res.status), `${path} responded in ${ms}ms`, data);
-    return { ok: res.ok, data };
-  } catch (err) {
-    const ms = Math.round(performance.now() - started);
-    bumpStats(false, ms);
-    addEntry('error', 'NET', `Could not reach ${url}. Confirm the FastAPI server is running.`);
-    return { ok: false, data: null };
-  }
-}
-
-async function checkHealth() {
-  const result = await apiCall('GET', '/health');
-  const dot = document.getElementById('status-dot');
-  const label = document.getElementById('status-text');
-
-  if (result.ok) {
-    dot.className = 'dot online';
-    label.textContent = `online - ${result.data.env || 'unknown env'}`;
-  } else {
-    dot.className = 'dot offline';
-    label.textContent = 'offline';
-  }
-}
-
+// ── Start / End ───────────────────────────────────────────────────────────
 async function startSim() {
-  const payload = refreshPayloadPreview();
-  if (!payload) return;
+  previewPayload();
+  const payload = buildPayload();
+  const { ok, data } = await api('POST', '/start', payload);
+  if (!ok) return;
 
-  const result = await apiCall('POST', '/start', payload);
-  if (!result.ok || !result.data.simulation_id) return;
-
-  simId = result.data.simulation_id;
-  document.getElementById('btn-end').disabled = false;
+  simId = data.simulation_id;
+  currentRoomName = data.livekit_room || payload.livekit_room;
   document.getElementById('btn-start').disabled = true;
-  document.getElementById('sim-id-display').textContent = `active simulation: ${simId}`;
-  addEntry('event', 'SIM', `Simulation started: ${simId}`);
-  loadRoom(result.data.participant_url || payload.participant_url, result.data.livekit_room || payload.livekit_room);
+  document.getElementById('btn-end').disabled   = false;
+  document.getElementById('btn-join').disabled  = false;
+  addEntry('event', 'SIM', `Simulation started: ${simId}. Click "Join Room" to connect your mic.`);
 }
 
 async function endSim() {
   if (!simId) return;
-
-  const current = simId;
-  const result = await apiCall('POST', '/end', { simulation_id: current });
-  if (!result.ok) return;
-
-  addEntry('event', 'END', `Simulation ended: ${current}`);
-  document.getElementById('btn-end').disabled = true;
+  await leaveRoom();
+  const { ok } = await api('POST', '/end', { simulation_id: simId });
+  if (!ok) return;
+  simId = null; currentRoomName = null;
   document.getElementById('btn-start').disabled = false;
-  document.getElementById('sim-id-display').textContent = 'no active simulation';
-  simId = null;
+  document.getElementById('btn-end').disabled   = true;
+  document.getElementById('btn-join').disabled  = true;
+  setRoomIdle();
+  addEntry('event', 'END', 'Simulation ended.');
 }
 
-function loadRoom(url, roomName) {
-  roomUrl = url || '';
-  const frame = document.getElementById('room-frame');
-  const placeholder = document.getElementById('room-placeholder');
-  const button = document.getElementById('btn-open-room');
-  const label = document.getElementById('room-url-label');
+// ── LiveKit room ─────────────────────────────────────────────────────────
+async function joinRoom() {
+  if (!currentRoomName) return;
+  addEntry('info', 'TOKEN', `Fetching participant token for room: ${currentRoomName}`);
 
-  if (url) {
-    frame.src = url;
-    frame.style.display = 'block';
-    placeholder.style.display = 'none';
-    button.disabled = false;
-    label.textContent = url;
-  } else {
-    frame.style.display = 'none';
-    placeholder.style.display = '';
-    button.disabled = true;
-    label.textContent = `LiveKit room ready: ${roomName}`;
+  const { ok, data } = await api('GET', `/participant-token?room=${encodeURIComponent(currentRoomName)}&identity=candidate`);
+  if (!ok || !data.token) {
+    addEntry('error', 'TOKEN', 'Could not get participant token — check LIVEKIT_API_KEY and LIVEKIT_API_SECRET in .env');
+    return;
   }
-  addEntry('event', 'ROOM', `LiveKit room ready: ${roomName || url}`);
+
+  const { Room, RoomEvent, createLocalAudioTrack } = LivekitClient;
+  activeRoom = new Room({ adaptiveStream: true, dynacast: true });
+
+  activeRoom.on(RoomEvent.ParticipantConnected, p => {
+    addEntry('event', 'ROOM', `Joined: ${p.identity}`);
+    refreshParticipants();
+  });
+  activeRoom.on(RoomEvent.ParticipantDisconnected, p => {
+    addEntry('warn', 'ROOM', `Left: ${p.identity}`);
+    refreshParticipants();
+  });
+  activeRoom.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
+    if (track.kind !== 'audio') return;
+    const el = track.attach();
+    el.style.display = 'none';
+    document.body.appendChild(el);
+    addEntry('info', 'AUDIO', `Agent audio connected (${participant.identity})`);
+    // simple speaking detector
+    track.on('audioPlaybackStarted', () => setAgentSpeaking(true));
+    track.on('audioPlaybackFailed',  () => setAgentSpeaking(false));
+  });
+  activeRoom.on(RoomEvent.TrackUnsubscribed, () => setAgentSpeaking(false));
+  activeRoom.on(RoomEvent.Disconnected, () => {
+    addEntry('warn','ROOM','Disconnected from room');
+    setRoomIdle();
+  });
+
+  try {
+    await activeRoom.connect(data.url, data.token);
+    addEntry('info', 'ROOM', `Connected to ${activeRoom.name} as candidate`);
+
+    const audioTrack = await createLocalAudioTrack({ echoCancellation: true, noiseSuppression: true });
+    await activeRoom.localParticipant.publishTrack(audioTrack);
+    addEntry('info', 'MIC', 'Microphone live — agent can hear you');
+
+    micMuted = false;
+    document.getElementById('btn-join').disabled  = true;
+    document.getElementById('btn-leave').disabled = false;
+    setRoomConnected();
+  } catch(e) {
+    addEntry('error','ROOM', `Connection failed: ${e.message}`);
+  }
 }
 
-function openRoom() {
-  if (roomUrl) window.open(roomUrl, '_blank', 'noopener,noreferrer');
+async function leaveRoom() {
+  if (!activeRoom) return;
+  await activeRoom.disconnect();
+  activeRoom = null;
+  document.getElementById('btn-join').disabled  = false;
+  document.getElementById('btn-leave').disabled = true;
+  setRoomIdle();
 }
 
+async function toggleMic() {
+  if (!activeRoom) return;
+  micMuted = !micMuted;
+  await activeRoom.localParticipant.setMicrophoneEnabled(!micMuted);
+  const btn = document.getElementById('mic-btn');
+  if (btn) {
+    btn.className = 'mic-btn' + (micMuted ? ' muted' : '');
+    btn.textContent = micMuted ? '🔇' : '🎙️';
+    btn.nextElementSibling.textContent = micMuted ? 'Mic muted' : 'Mic live';
+  }
+  addEntry('info','MIC', micMuted ? 'Microphone muted' : 'Microphone unmuted');
+}
+
+function setAgentSpeaking(speaking) {
+  agentSpeaking = speaking;
+  const vis = document.getElementById('agent-vis');
+  if (vis) vis.className = 'agent-vis' + (speaking ? ' speaking' : '');
+}
+
+function refreshParticipants() {
+  if (!activeRoom) return;
+  const wrap = document.getElementById('participants');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const self = document.createElement('span');
+  self.className = 'participant-tag self';
+  self.textContent = `you (${activeRoom.localParticipant.identity})`;
+  wrap.appendChild(self);
+  activeRoom.remoteParticipants.forEach((p) => {
+    const tag = document.createElement('span');
+    tag.className = 'participant-tag agent';
+    tag.textContent = p.identity;
+    wrap.appendChild(tag);
+  });
+}
+
+function setRoomConnected() {
+  document.getElementById('room-status-label').textContent = 'connected';
+  document.getElementById('room-body').innerHTML = `
+    <div class="room-connected">
+      <div class="agent-vis" id="agent-vis">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div>
+      </div>
+      <div class="agent-label"><strong>Agent</strong> — listening</div>
+      <button class="mic-btn" id="mic-btn" onclick="toggleMic()">🎙️</button>
+      <div class="mic-label">Mic live</div>
+      <div class="participants" id="participants"></div>
+    </div>`;
+  refreshParticipants();
+}
+
+function setRoomIdle() {
+  document.getElementById('room-status-label').textContent = 'not connected';
+  document.getElementById('room-body').innerHTML = `
+    <div class="room-idle">
+      <strong>Start a simulation to connect</strong>
+      The agent will join the LiveKit room. Click Start, then Join Room.
+    </div>`;
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  fillFixtureDefaults();
-  addEntry('info', 'BOOT', 'Test console ready.');
+  previewPayload();
+  addEntry('info','BOOT','Console ready. Click Health, then Start, then Join Room.');
   checkHealth();
-
-  [
-    'payload-sim-id',
-    'payload-duration',
-    'payload-livekit-url',
-    'payload-livekit-room',
-    'payload-livekit-token',
-    'payload-participant-url',
-    'payload-persona',
-    'payload-mode',
-    'payload-difficulty',
-    'payload-role',
-    'payload-pressure',
-    'payload-memory',
-    'payload-name',
-    'payload-seniority',
-    'payload-skills',
-    'payload-cv',
-    'payload-questions',
-  ].forEach(id => {
-    document.getElementById(id).addEventListener('input', refreshPayloadPreview);
-    document.getElementById(id).addEventListener('change', refreshPayloadPreview);
+  ['f-simid','f-dur','f-lkurl','f-room','f-persona','f-mode','f-diff',
+   'f-role','f-pressure','f-memory','f-name','f-sen','f-cv','f-qs'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', previewPayload);
   });
 });
 </script>

@@ -7,10 +7,13 @@ finishes speaking. Runs as an asyncio task — never blocks the pipeline.
 Emits answer_scored WebSocket event to Node.js with the full score breakdown.
 The overall score is also fed back into the state machine to drive
 pressure escalation decisions.
+
+FIX: was using AsyncAnthropic / config.claude — config no longer has a
+claude field (replaced by groq). Switched to Groq for consistency.
 """
 
 import asyncio
-from anthropic import AsyncAnthropic
+from groq import AsyncGroq
 from typing import Callable, Awaitable
 
 from config import config
@@ -20,23 +23,23 @@ from utils.logger import get_logger
 from utils.error_handler import retry, ProviderError
 
 log = get_logger(__name__)
-_client = AsyncAnthropic(api_key=config.claude.api_key)
+_client = AsyncGroq(api_key=config.groq.api_key)
 
 WsEmit = Callable[[str, dict], Awaitable[None]]
 
 
 @retry(attempts=2, delay=1.0, exceptions=(ProviderError,))
-async def _call_claude(prompt: str) -> str:
+async def _call_groq(prompt: str) -> str:
     try:
-        r = await _client.messages.create(
-            model=config.claude.model,
+        r = await _client.chat.completions.create(
+            model=config.groq.model,
             max_tokens=300,
             temperature=0.2,   # low temp for consistent scoring
             messages=[{"role": "user", "content": prompt}],
         )
-        return r.content[0].text
+        return (r.choices[0].message.content or "").strip()
     except Exception as e:
-        raise ProviderError("Claude/Evaluator", str(e))
+        raise ProviderError("Groq/Evaluator", str(e))
 
 
 async def evaluate_answer(
@@ -48,12 +51,6 @@ async def evaluate_answer(
     """
     Score one answer and emit the result to Node.js.
     Returns the overall score (0.0 - 1.0) for the state machine.
-
-    Args:
-        ctx:               Full simulation context.
-        snapshot:          Current session state (for question index).
-        answer_transcript: What the candidate said, as transcribed text.
-        ws_emit:           WebSocket emit function to Node.js.
     """
     sim_id = ctx["simulation_id"]
     sim_log = log.bind(simulation_id=sim_id)
@@ -65,7 +62,7 @@ async def evaluate_answer(
     prompt = build_evaluation_prompt(question, answer_transcript, persona, target_role)
 
     try:
-        raw = await _call_claude(prompt)
+        raw = await _call_groq(prompt)
         scores = parse_scores(raw)
         overall = float(scores.get("overall", 0.6))
         sim_log.info("Answer scored", question_id=question.get("id"), overall=overall)
@@ -88,10 +85,7 @@ def spawn_evaluation(
     ws_emit: WsEmit,
     on_score: Callable[[float], None],
 ) -> None:
-    """
-    Fire-and-forget wrapper. Spawns evaluation as background asyncio task.
-    on_score() is called with the result to update the snapshot.
-    """
+    """Fire-and-forget wrapper. Spawns evaluation as background asyncio task."""
     async def _run():
         score = await evaluate_answer(ctx, snapshot, answer_transcript, ws_emit)
         on_score(score)

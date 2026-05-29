@@ -5,13 +5,12 @@ Pipecat frame processor — watches the live transcript and fires an
 interrupt when the candidate is rambling.
 
 On interrupt:
-  - Emits interrupt_frame into the pipeline (cuts candidate audio)
   - Calls on_interrupt() so the state machine can trigger a polite cut-off
 """
 
 from typing import Callable, Awaitable
 
-from pipecat.frames.frames import TranscriptionFrame, UserStoppedSpeakingFrame
+from pipecat.frames.frames import TranscriptionFrame
 from pipecat.processors.frame_processor import FrameProcessor
 
 from processors.rambling_scorer import is_rambling
@@ -52,9 +51,13 @@ class RamblingDetector(FrameProcessor):
         self._interrupted = False
 
     async def process_frame(self, frame, direction):
+        # CRITICAL: call super() first so base class handles StartFrame/CancelFrame.
+        await super().process_frame(frame, direction)
+
+        # Always pass every frame through unchanged.
         await self.push_frame(frame, direction)
 
-        # Only watch transcription frames while candidate is speaking
+        # Only inspect transcription frames while candidate is speaking.
         if not isinstance(frame, TranscriptionFrame):
             return
         if self._snapshot.current_state != InterviewState.LISTENING:

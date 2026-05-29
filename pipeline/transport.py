@@ -6,9 +6,8 @@ LiveKit is what puts the agent inside the room with the candidate.
 """
 
 import time
-
 import jwt
-
+from pipecat.audio.vad.vad_analyzer import VADAnalyzer
 from pipecat.transports.livekit.transport import LiveKitParams, LiveKitTransport
 
 from config import config
@@ -24,7 +23,6 @@ def _make_livekit_token(room_name: str, identity: str) -> str:
             "livekit_token is required unless LIVEKIT_API_KEY and "
             "LIVEKIT_API_SECRET are set."
         )
-
     now = int(time.time())
     claims = {
         "iss": config.livekit.api_key,
@@ -42,7 +40,7 @@ def _make_livekit_token(room_name: str, identity: str) -> str:
     return jwt.encode(claims, config.livekit.api_secret, algorithm="HS256")
 
 
-def create_transport(ctx: dict) -> LiveKitTransport:
+def create_transport(ctx: dict, vad_analyzer: VADAnalyzer) -> LiveKitTransport:
     """
     Create a LiveKit transport for a simulation session.
 
@@ -73,6 +71,7 @@ def create_transport(ctx: dict) -> LiveKitTransport:
         audio_out_enabled=True,
         video_in_enabled=False,
         video_out_enabled=False,
+        vad_analyzer=vad_analyzer,          # ✅ attach VAD here
     )
 
     transport = LiveKitTransport(

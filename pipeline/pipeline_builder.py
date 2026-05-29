@@ -38,25 +38,31 @@ async def build_and_run(ctx: dict) -> None:
     sim_log = log.bind(simulation_id=sim_id)
     sim_log.info("Building pipeline", mode=ctx.get("mode"))
 
-    transport = create_transport(ctx)
+    # Create processors
     stt, tts, vad = create_stt(sim_id), create_tts(sim_id), create_vad(sim_id)
 
+    # Create transport with VAD attached
+    transport = create_transport(ctx, vad_analyzer=vad)
+
+    # WebSocket transcript logger
     ws_logger = TranscriptLogger(sim_id)
     await ws_logger.connect()
     ws_emit = make_ws_emit(ws_logger)
 
+    # TTS queue and shared session snapshot
     tts_queue: asyncio.Queue[str] = asyncio.Queue()
-    # Single shared snap — passed to BOTH run_interview AND make_on_candidate_speech
-    # so handle_answer_received state changes are visible to the interview loop.
     snap = SessionSnapshot(simulation_id=sim_id)
     speak = make_speak_fn(tts_queue, sim_id)
 
+    # Apply any active modes (emotion, rambling, etc.)
     active_modes = await apply_mode(ctx, tts, speak, ws_emit)
     sim_log.info("Modes applied", modes=active_modes)
 
+    # Create special processors (emotion, rambling, silence)
     emotion, rambling, silence, _ = create_processors(sim_id, ctx, snap, speak, ws_emit)
     on_candidate_speech = make_on_candidate_speech(ctx, snap, speak, ws_emit)
 
+    # STT event handler
     @stt.event_handler("on_transcription_message")
     async def on_transcript(message: dict):
         text = message.get("text", "").strip()
@@ -64,19 +70,28 @@ async def build_and_run(ctx: dict) -> None:
             await ws_emit("transcript_chunk", {"simulation_id": sim_id, "text": text})
         await on_candidate_speech(message, sim_log)
 
+    # Pipeline runner (must be defined before the event handler that uses it)
+    runner = PipelineRunner()
+
+    # Transport event handler (uses runner)
     @transport.event_handler("on_participant_left")
     async def on_left(participant: dict, reason: str):
         sim_log.info("Candidate left room", reason=reason)
         await runner.stop()
 
+    # Build pipeline – note: vad is NOT in this list, it's attached to transport.input()
     pipeline = Pipeline([
-        transport.input(), vad, stt,
-        emotion, rambling, silence,
-        tts, transport.output(),
+        transport.input(),
+        stt,
+        emotion,
+        rambling,
+        silence,
+        tts,
+        transport.output(),
     ])
     task = PipelineTask(pipeline)
-    runner = PipelineRunner()
 
+    # Background tasks (proctoring & heartbeat)
     stop_event = asyncio.Event()
     proctoring_task, heartbeat_task = start_background_tasks(sim_id, ws_emit, stop_event)
 
