@@ -19,7 +19,7 @@ from pipeline.processor_factory import create_processors
 from pipeline.transcript_router import TranscriptRouter
 from pipeline.background_tasks import start_background_tasks
 from state_machine.interview_flow import run_interview
-from state_machine.states import SessionSnapshot
+from state_machine.states import InterviewState, SessionSnapshot
 from services.transcript_logger import TranscriptLogger, make_ws_emit
 from services.session_reporter import report_completed
 from modes.mode_config import apply_mode
@@ -61,6 +61,9 @@ async def build_and_run(ctx: dict) -> None:
     @transport.event_handler("on_participant_left")
     async def on_left(participant: dict, reason: str):
         sim_log.info("Candidate left room", reason=reason)
+        # Mark COMPLETED so run_interview and drain_tts_queue exit their loops.
+        # Without this, asyncio.gather() hangs waiting for them after runner stops.
+        snap.current_state = InterviewState.COMPLETED
         await runner.stop()
 
     pipeline = Pipeline([

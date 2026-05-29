@@ -29,7 +29,8 @@ async def handle_follow_up(ctx: dict, snapshot: SessionSnapshot, speak: SpeakFn)
     questions = ctx.get("question_bank", [])
     q = questions[snapshot.current_question_index]
     follow_ups = q.get("follow_up_bank", [])
-    follow_up = follow_ups[snapshot.current_followup_count] if follow_ups else None
+    count = snapshot.current_followup_count
+    follow_up = follow_ups[count] if count < len(follow_ups) else None
     prompt = build_system_prompt(ctx)
     instruction = (
         f"{prompt}\n\nAsk this follow-up: '{follow_up}'"

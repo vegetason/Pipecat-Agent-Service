@@ -1,11 +1,8 @@
 """
 processors/rambling_detector.py
 --------------------------------
-Pipecat frame processor — watches the live transcript and fires an
-interrupt when the candidate is rambling.
-
-On interrupt:
-  - Calls on_interrupt() so the state machine can trigger a polite cut-off
+Pipecat frame processor — watches the live transcript and fires an interrupt
+when the candidate is rambling. Calls on_interrupt() on detection.
 """
 
 from typing import Callable, Awaitable
@@ -42,6 +39,7 @@ class RamblingDetector(FrameProcessor):
         self._full_text = ""
         self._sentences: list[str] = []
         self._interrupted = False
+        self._last_q_index: int = 0
         self._log = log.bind(simulation_id=simulation_id)
 
     def reset_for_new_question(self) -> None:
@@ -51,11 +49,14 @@ class RamblingDetector(FrameProcessor):
         self._interrupted = False
 
     async def process_frame(self, frame, direction):
-        # CRITICAL: call super() first so base class handles StartFrame/CancelFrame.
         await super().process_frame(frame, direction)
-
-        # Always pass every frame through unchanged.
         await self.push_frame(frame, direction)
+
+        # Auto-reset when question index advances — prevents carry-over between questions.
+        current_q = self._snapshot.current_question_index
+        if current_q != self._last_q_index:
+            self.reset_for_new_question()
+            self._last_q_index = current_q
 
         # Only inspect transcription frames while candidate is speaking.
         if not isinstance(frame, TranscriptionFrame):

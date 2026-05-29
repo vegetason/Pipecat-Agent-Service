@@ -32,7 +32,9 @@ def make_on_candidate_speech(ctx: dict, snap: SessionSnapshot, speak, ws_emit):
         def on_score(score: float) -> None:
             latest_score[0] = score
 
-        spawn_evaluation(ctx, snap, transcript, ws_emit, on_score)
+        # Capture index NOW — snapshot.current_question_index may change before
+        # the evaluation task runs (handle_transitioning increments it).
+        spawn_evaluation(ctx, snap, transcript, ws_emit, on_score, snap.current_question_index)
 
         # Brief delay so evaluation has a chance to start before transition
         await asyncio.sleep(0.5)

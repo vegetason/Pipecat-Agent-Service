@@ -1,15 +1,8 @@
 """
 subagents/evaluator_agent.py
 -----------------------------
-Scores each answer in the background immediately after the candidate
-finishes speaking. Runs as an asyncio task — never blocks the pipeline.
-
-Emits answer_scored WebSocket event to Node.js with the full score breakdown.
-The overall score is also fed back into the state machine to drive
-pressure escalation decisions.
-
-FIX: was using AsyncAnthropic / config.claude — config no longer has a
-claude field (replaced by groq). Switched to Groq for consistency.
+Scores each answer as a background asyncio task — never blocks the pipeline.
+Emits answer_scored to Node.js; feeds overall score back to the state machine.
 """
 
 import asyncio
@@ -47,15 +40,16 @@ async def evaluate_answer(
     snapshot: SessionSnapshot,
     answer_transcript: str,
     ws_emit: WsEmit,
+    question_index: int,
 ) -> float:
-    """
-    Score one answer and emit the result to Node.js.
-    Returns the overall score (0.0 - 1.0) for the state machine.
-    """
+    """Score one answer. question_index captured at spawn time (race condition fix)."""
     sim_id = ctx["simulation_id"]
     sim_log = log.bind(simulation_id=sim_id)
     questions = ctx.get("question_bank", [])
-    question = questions[snapshot.current_question_index]
+    if question_index >= len(questions):
+        sim_log.warning("Evaluation skipped — question index out of range", index=question_index)
+        return 0.6
+    question = questions[question_index]
     persona = ctx.get("persona", "corporate_executive")
     target_role = ctx.get("candidate_profile", {}).get("target_role", "the role")
 
@@ -84,10 +78,11 @@ def spawn_evaluation(
     answer_transcript: str,
     ws_emit: WsEmit,
     on_score: Callable[[float], None],
+    question_index: int,
 ) -> None:
-    """Fire-and-forget wrapper. Spawns evaluation as background asyncio task."""
+    """Fire-and-forget. question_index passed explicitly to avoid race with handle_transitioning."""
     async def _run():
-        score = await evaluate_answer(ctx, snapshot, answer_transcript, ws_emit)
+        score = await evaluate_answer(ctx, snapshot, answer_transcript, ws_emit, question_index)
         on_score(score)
 
     asyncio.create_task(_run())
