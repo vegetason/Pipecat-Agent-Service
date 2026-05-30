@@ -52,18 +52,17 @@ async def ask_groq(system_prompt: str, simulation_id: str) -> str:
         raise ProviderError("Groq", str(e))
 
 
-def make_speak_fn(tts_queue: asyncio.Queue, simulation_id: str):
+def make_speak_fn(tts_queue: asyncio.Queue, simulation_id: str, gate):
     """
-    Returns the speak() coroutine that interview_flow.py calls.
-    Closes over the TTS queue so the state machine never touches the pipeline directly.
-
-    Args:
-        tts_queue:     asyncio.Queue that pipeline_builder drains into Cartesia.
-        simulation_id: For logging.
+    Returns the speak() coroutine used by the state machine.
+    Blocks until TTS audio has finished playing (via SpeakingGate) so the
+    state machine never advances to LISTENING while the agent is mid-sentence.
     """
     async def speak(instruction: str) -> None:
         text = await ask_groq(instruction, simulation_id)
+        gate.started()   # pre-clear before audio begins
         await tts_queue.put(text)
         log.info("Agent speech queued", simulation_id=simulation_id, preview=text[:60])
+        await gate.wait_done()   # block until bot_stopped_speaking fires
 
     return speak

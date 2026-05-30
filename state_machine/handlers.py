@@ -10,7 +10,6 @@ import asyncio
 import random
 from typing import Callable, Awaitable
 
-from config import config
 from context.context_builder import build_system_prompt
 from state_machine.states import InterviewState, SessionSnapshot
 
@@ -18,11 +17,8 @@ SpeakFn = Callable[[str], Awaitable[None]]
 
 
 async def handle_waiting_room(snapshot: SessionSnapshot, speak: SpeakFn) -> None:
-    wait = random.randint(
-        config.simulation.waiting_room_min_seconds,
-        config.simulation.waiting_room_max_seconds,
-    )
-    await asyncio.sleep(wait)
+    """Brief natural pause after candidate joins, before the interviewer speaks."""
+    await asyncio.sleep(random.randint(2, 4))
 
 
 async def handle_intro(ctx: dict, snapshot: SessionSnapshot, speak: SpeakFn) -> None:

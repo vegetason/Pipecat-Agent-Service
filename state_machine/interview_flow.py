@@ -28,23 +28,11 @@ StateCb = Callable[[InterviewState], Awaitable[None]]
 async def run_interview(
     ctx: dict,
     speak: SpeakFn,
-    snap: SessionSnapshot,           # FIX: accept shared snap from pipeline_builder
+    snap: SessionSnapshot,
+    participant_joined: asyncio.Event | None = None,
     on_state_change: StateCb | None = None,
 ) -> None:
-    """
-    Drive the full interview from start to finish.
-
-    Args:
-        ctx:             Full simulation context dict.
-        speak:           Async fn — wired to Claude + TTS by pipeline_builder.
-        snap:            Shared SessionSnapshot — MUST be the same object passed to
-                         make_on_candidate_speech so state changes are visible to both.
-        on_state_change: Optional callback fired on every state change.
-    """
-    # FIX: removed internal `snap = SessionSnapshot(simulation_id=sim_id)` creation.
-    # Previously, run_interview had its own private snap that was never updated by
-    # handle_answer_received (which received pipeline_builder's snap). The while loop
-    # checked its own snap.current_state which never reached COMPLETED — infinite loop.
+    """Drive the full interview. Waits for candidate to join before speaking."""
     sim_id = ctx["simulation_id"]
     total  = len(ctx.get("question_bank", []))
     sim_log = log.bind(simulation_id=sim_id)
@@ -54,6 +42,16 @@ async def run_interview(
         sim_log.info("State changed", state=state.name)
         if on_state_change:
             await on_state_change(state)
+
+    if participant_joined is not None:
+        sim_log.info("Waiting for candidate to join room")
+        try:
+            await asyncio.wait_for(participant_joined.wait(), timeout=300.0)
+            sim_log.info("Candidate joined — starting interview")
+        except asyncio.TimeoutError:
+            sim_log.warning("Candidate never joined — ending simulation")
+            snap.current_state = InterviewState.COMPLETED
+            return
 
     await go(InterviewState.WAITING_ROOM)
     await handle_waiting_room(snap, speak)
