@@ -3,11 +3,19 @@ pipeline/pipeline_builder.py
 -----------------------------
 Assembles and runs the full Pipecat pipeline for one simulation session.
 Processor creation → processor_factory.py | Background tasks → background_tasks.py
+
+FIXES applied in this file:
+  1. PipelineRunner → WorkerRunner (pipecat 1.3 — PipelineRunner is a deprecated
+     alias that may not exist in all builds; WorkerRunner is the correct import).
+  2. SpeakingGate is now passed into TranscriptRouter so that transcription
+     frames arriving while the agent is speaking are silently dropped.
+     Without this, Deepgram transcribes TTS audio back as candidate speech and
+     the state machine jumps to the next question unprompted.
 """
 
 import asyncio
 from pipecat.pipeline.pipeline import Pipeline
-from pipecat.pipeline.runner import PipelineRunner
+from pipecat.workers.runner import WorkerRunner          # FIX 1: was pipecat.pipeline.runner.PipelineRunner
 from pipecat.pipeline.task import PipelineTask
 
 from pipeline.transport import create_transport
@@ -35,6 +43,7 @@ async def build_and_run(ctx: dict) -> None:
     """Assemble and run the full interview pipeline for one simulation."""
     sim_id = ctx["simulation_id"]
     sim_log = log.bind(simulation_id=sim_id)
+
     stt, tts, vad = create_stt(sim_id), create_tts(sim_id), create_vad(sim_id)
     transport = create_transport(ctx, vad_analyzer=vad)
 
@@ -53,12 +62,17 @@ async def build_and_run(ctx: dict) -> None:
         ctx["weakness_patterns"] = await fetch_weakness_patterns(ctx["user_id"])
 
     active_modes = await apply_mode(ctx, tts, speak, ws_emit)
+    sim_log.info("Modes active", modes=active_modes)
 
     emotion, rambling, silence, _ = create_processors(sim_id, ctx, snap, speak, ws_emit)
     on_candidate_speech = make_on_candidate_speech(ctx, snap, speak, ws_emit)
 
-    router = TranscriptRouter(sim_id, snap, on_candidate_speech, ws_emit)
-    runner = PipelineRunner()
+    # FIX 2: pass gate into TranscriptRouter so it can suppress transcription
+    # frames that arrive while the agent is speaking. This stops Deepgram from
+    # feeding TTS audio back into the candidate speech handler.
+    router = TranscriptRouter(sim_id, snap, on_candidate_speech, ws_emit, gate=gate)
+
+    runner = WorkerRunner()                               # FIX 1: was PipelineRunner()
     register_session_events(transport, snap, runner, sim_log, gate, participant_joined)
 
     pipeline = Pipeline([

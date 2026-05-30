@@ -10,6 +10,7 @@
     --bg: #0b0d10; --panel: #12161b; --panel-2: #171c22; --line: #28313b;
     --text: #ecf2f8; --muted: #92a0ad; --dim: #657380;
     --accent: #34d399; --accent-2: #60a5fa; --warn: #fbbf24; --danger: #fb7185;
+    --agent-bubble: #1a2535; --candidate-bubble: #1a2a1f;
     --input: #0e1217;
     --font: Inter, ui-sans-serif, system-ui, sans-serif;
     --mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
@@ -32,8 +33,10 @@
   .dot.online  { background: var(--accent); box-shadow: 0 0 0 4px rgba(52,211,153,.15); }
   .dot.offline { background: var(--danger); }
 
+  /* ── Main 3-column layout ── */
   .layout {
-    display: grid; grid-template-columns: minmax(340px,420px) 1fr;
+    display: grid;
+    grid-template-columns: minmax(300px, 360px) 1fr minmax(260px, 320px);
     gap: 16px; padding: 16px; align-items: start;
   }
 
@@ -77,21 +80,27 @@
   .btn.danger  { border-color: rgba(251,113,133,.5); background: rgba(251,113,133,.1); color: #fecdd3; }
   .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
 
-  /* ── Room panel ─────────────────────────────── */
-  .room-panel { display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+  /* ── Center column: room + transcript ── */
+  .center-col {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  /* ── Room panel ── */
+  .room-panel { }
 
   .room-body {
-    min-height: 220px; background: #05070a; border-radius: 0 0 0 0;
+    min-height: 160px; background: #05070a;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 16px; padding: 24px; text-align: center;
   }
 
   .room-idle { color: var(--muted); }
   .room-idle strong { display: block; font-size: 15px; color: var(--text); margin-bottom: 6px; }
-
   .room-connected { width: 100%; }
 
-  /* Agent speaking indicator */
   .agent-vis {
     display: flex; align-items: center; justify-content: center; gap: 4px;
     height: 48px; margin-bottom: 12px;
@@ -110,7 +119,6 @@
   .agent-label { color: var(--muted); font-size: 12px; margin-bottom: 20px; }
   .agent-label strong { color: var(--text); }
 
-  /* Mic button */
   .mic-btn {
     width: 64px; height: 64px; border-radius: 50%;
     border: 2px solid var(--accent); background: rgba(52,211,153,.1);
@@ -122,18 +130,128 @@
   .mic-btn.muted { border-color: var(--danger); background: rgba(251,113,133,.1); color: var(--danger); }
   .mic-label { margin-top: 8px; font-size: 11px; color: var(--muted); }
 
-  /* Participants row */
   .participants { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; justify-content: center; }
   .participant-tag {
     padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
     border: 1px solid var(--line); background: var(--panel-2); color: var(--muted);
   }
-  .participant-tag.self { border-color: rgba(52,211,153,.4); color: var(--accent); }
+  .participant-tag.self  { border-color: rgba(52,211,153,.4); color: var(--accent); }
   .participant-tag.agent { border-color: rgba(96,165,250,.4); color: var(--accent-2); }
 
   .room-foot { padding: 12px 16px; border-top: 1px solid var(--line); }
 
-  /* ── Log panel ─────────────────────────────── */
+  /* ── Transcript panel ── */
+  .transcript-panel {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    max-height: calc(100vh - 340px);
+    min-height: 280px;
+  }
+
+  .transcript-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .transcript-legend {
+    display: flex;
+    gap: 14px;
+    font-size: 11px;
+  }
+  .legend-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+  .legend-dot.agent     { background: var(--accent-2); }
+  .legend-dot.candidate { background: var(--accent); }
+
+  #transcript-body {
+    overflow-y: auto;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .bubble {
+    max-width: 88%;
+    padding: 10px 13px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.55;
+    position: relative;
+    word-break: break-word;
+  }
+  .bubble .bname {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    opacity: .7;
+  }
+  .bubble .btext { color: var(--text); }
+  .bubble .btime {
+    font-size: 10px;
+    color: var(--dim);
+    margin-top: 4px;
+    text-align: right;
+  }
+
+  /* Agent bubble — left-aligned, blue tint */
+  .bubble.agent {
+    align-self: flex-start;
+    background: var(--agent-bubble);
+    border: 1px solid rgba(96,165,250,.2);
+    border-bottom-left-radius: 2px;
+  }
+  .bubble.agent .bname { color: var(--accent-2); }
+
+  /* Candidate bubble — right-aligned, green tint */
+  .bubble.candidate {
+    align-self: flex-end;
+    background: var(--candidate-bubble);
+    border: 1px solid rgba(52,211,153,.2);
+    border-bottom-right-radius: 2px;
+  }
+  .bubble.candidate .bname { color: var(--accent); text-align: right; }
+  .bubble.candidate .btime { text-align: right; }
+
+  /* Streaming / typing bubble */
+  .bubble.streaming .btext::after {
+    content: "▋";
+    animation: blink .7s step-end infinite;
+    margin-left: 2px;
+    opacity: .7;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .transcript-empty {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    padding: 32px 16px;
+  }
+
+  .transcript-foot {
+    padding: 8px 16px;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--dim);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #clear-transcript { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 11px; }
+  #clear-transcript:hover { color: var(--danger); }
+
+  /* ── Right: log panel ── */
   .log-wrap {
     display: grid; grid-template-rows: auto 1fr auto;
     max-height: calc(100vh - 88px); min-height: 0;
@@ -170,9 +288,28 @@
   .stats { display: flex; gap: 16px; margin-left: auto; }
   .stat strong { color: var(--accent); }
 
-  @media (max-width: 900px) {
+  /* ── LiveKit URL chip (read-only display) ── */
+  .lk-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--input); border: 1px solid var(--line);
+    border-radius: 5px; padding: 7px 10px; font-size: 11px;
+    font-family: var(--mono); color: var(--muted); overflow: hidden;
+  }
+  .lk-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .lk-chip .lk-badge {
+    background: rgba(52,211,153,.12); color: var(--accent);
+    border: 1px solid rgba(52,211,153,.3); border-radius: 3px;
+    padding: 1px 6px; font-size: 9px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; white-space: nowrap;
+  }
+
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: minmax(280px,320px) 1fr; }
+    .log-wrap { display: none; }
+  }
+  @media (max-width: 700px) {
     .layout { grid-template-columns: 1fr; }
-    .log-wrap { max-height: 560px; }
+    .transcript-panel { max-height: 360px; }
   }
 </style>
 </head>
@@ -192,9 +329,8 @@
 
   <div class="layout">
 
-    <!-- ── Left: controls ────────────────────── -->
+    <!-- ── Left: controls ── -->
     <aside>
-
       <div class="panel">
         <div class="panel-head"><span class="panel-title">Controls</span></div>
 
@@ -207,11 +343,19 @@
         </div>
 
         <div class="section">
+          <div class="slabel">LiveKit</div>
+          <!-- Read-only chip — URL comes from server env, never entered manually -->
+          <div class="lk-chip">
+            <span id="lk-url-display">loading from server…</span>
+            <span class="lk-badge">from .env</span>
+          </div>
+        </div>
+
+        <div class="section">
           <div class="slabel">Session</div>
           <div class="grid2">
             <div class="field"><label>Simulation ID</label><input id="f-simid" value="dev-sim-001"></div>
             <div class="field"><label>Duration (min)</label><input id="f-dur" type="number" value="30"></div>
-            <div class="field full"><label>LiveKit URL</label><input id="f-lkurl" value="wss://your-project.livekit.cloud"></div>
             <div class="field"><label>LiveKit Room</label><input id="f-room" value="dev-room-001"></div>
             <div class="field"><label>Persona</label>
               <select id="f-persona">
@@ -278,11 +422,10 @@ How do you prioritize your roadmap when capacity is limited?</textarea>
           <textarea class="mono" id="f-json" readonly style="min-height:80px;font-size:10px"></textarea>
         </div>
       </div>
-
     </aside>
 
-    <!-- ── Right: room + log ──────────────────── -->
-    <div style="display:grid;gap:16px;grid-template-rows:auto 1fr;min-height:0">
+    <!-- ── Center: room + transcript ── -->
+    <div class="center-col">
 
       <!-- Room panel -->
       <div class="panel room-panel">
@@ -294,7 +437,7 @@ How do you prioritize your roadmap when capacity is limited?</textarea>
         <div class="room-body" id="room-body">
           <div class="room-idle">
             <strong>Start a simulation to connect</strong>
-            The agent will join the LiveKit room. Click Start, then join below.
+            The agent will join the LiveKit room. Click Start, then Join Room.
           </div>
         </div>
 
@@ -306,43 +449,125 @@ How do you prioritize your roadmap when capacity is limited?</textarea>
         </div>
       </div>
 
-      <!-- Log panel -->
-      <div class="panel log-wrap">
-        <div class="log-head">
-          <div class="filters">
-            <button class="flt active" onclick="setFilter('all',this)">All</button>
-            <button class="flt" onclick="setFilter('request',this)">Req</button>
-            <button class="flt" onclick="setFilter('info',this)">Info</button>
-            <button class="flt" onclick="setFilter('warn',this)">Warn</button>
-            <button class="flt" onclick="setFilter('error',this)">Err</button>
+      <!-- Live Transcript panel -->
+      <div class="panel transcript-panel">
+        <div class="transcript-head">
+          <span class="panel-title">Live Transcript</span>
+          <div class="transcript-legend">
+            <span><span class="legend-dot agent"></span>Agent</span>
+            <span><span class="legend-dot candidate"></span>You</span>
           </div>
-          <button id="clear-btn" onclick="clearLog()">clear</button>
         </div>
-        <div id="log" style="min-height:200px"></div>
-        <div class="log-foot">
-          <span id="ecount">0 entries</span>
-          <div class="stats">
-            <span><strong id="sc">0</strong> calls</span>
-            <span><strong id="s2">0</strong> 2xx</span>
-            <span><strong id="se">0</strong> err</span>
-            <span><strong id="sms">—</strong> ms</span>
+        <div id="transcript-body">
+          <div class="transcript-empty" id="transcript-empty">
+            Transcript will appear here once the simulation starts.
           </div>
+        </div>
+        <div class="transcript-foot">
+          <span id="bubble-count">0 messages</span>
+          <button id="clear-transcript" onclick="clearTranscript()">clear</button>
         </div>
       </div>
 
     </div>
-  </div>
-</div>
+
+    <!-- ── Right: log panel ── -->
+    <div class="panel log-wrap">
+      <div class="log-head">
+        <div class="filters">
+          <button class="flt active" onclick="setFilter('all',this)">All</button>
+          <button class="flt" onclick="setFilter('request',this)">Req</button>
+          <button class="flt" onclick="setFilter('info',this)">Info</button>
+          <button class="flt" onclick="setFilter('warn',this)">Warn</button>
+          <button class="flt" onclick="setFilter('error',this)">Err</button>
+        </div>
+        <button id="clear-btn" onclick="clearLog()">clear</button>
+      </div>
+      <div id="log" style="min-height:200px"></div>
+      <div class="log-foot">
+        <span id="ecount">0 entries</span>
+        <div class="stats">
+          <span><strong id="sc">0</strong> calls</span>
+          <span><strong id="s2">0</strong> 2xx</span>
+          <span><strong id="se">0</strong> err</span>
+          <span><strong id="sms">—</strong> ms</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.layout -->
+</div><!-- /.app -->
 
 <script>
 const BASE = window.location.origin;
 let simId = null, activeRoom = null, currentRoomName = null;
 let filter = 'all', calls = 0, oks = 0, errs = 0;
-let micMuted = false, agentSpeaking = false;
+let micMuted = false;
+let livekitUrlFromServer = '';   // filled on health check — never entered manually
+let streamingBubble = null;      // the currently-streaming agent bubble element
 
-// ── Log ──────────────────────────────────────────────────────────────────
-function ts() { return new Date().toTimeString().slice(0,8); }
+// ── Transcript ────────────────────────────────────────────────────────────
+function ts() { return new Date().toTimeString().slice(0, 8); }
+function tsShort() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}); }
 
+function addBubble(role, text, streaming = false) {
+  const body = document.getElementById('transcript-body');
+  const empty = document.getElementById('transcript-empty');
+  if (empty) empty.remove();
+
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${role}${streaming ? ' streaming' : ''}`;
+  bubble.innerHTML = `
+    <div class="bname">${role === 'agent' ? '🤖 Interviewer' : '🎙️ You'}</div>
+    <div class="btext">${escHtml(text)}</div>
+    <div class="btime">${tsShort()}</div>
+  `;
+  body.appendChild(bubble);
+  body.scrollTop = body.scrollHeight;
+
+  const count = body.querySelectorAll('.bubble').length;
+  document.getElementById('bubble-count').textContent = `${count} message${count !== 1 ? 's' : ''}`;
+
+  return bubble;
+}
+
+function updateStreamingBubble(bubble, text) {
+  const btext = bubble.querySelector('.btext');
+  if (btext) btext.textContent = text;
+  const body = document.getElementById('transcript-body');
+  body.scrollTop = body.scrollHeight;
+}
+
+function finalizeStreamingBubble(bubble) {
+  bubble.classList.remove('streaming');
+  const btime = bubble.querySelector('.btime');
+  if (btime) btime.textContent = tsShort();
+}
+
+function addAgentMessage(text) {
+  if (streamingBubble) {
+    finalizeStreamingBubble(streamingBubble);
+    streamingBubble = null;
+  }
+  addBubble('agent', text);
+}
+
+function addCandidateMessage(text) {
+  addBubble('candidate', text);
+}
+
+function clearTranscript() {
+  const body = document.getElementById('transcript-body');
+  body.innerHTML = `<div class="transcript-empty" id="transcript-empty">Transcript cleared.</div>`;
+  document.getElementById('bubble-count').textContent = '0 messages';
+  streamingBubble = null;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Log ───────────────────────────────────────────────────────────────────
 function addEntry(type, tag, msg, body) {
   const log = document.getElementById('log');
   const el = document.createElement('div');
@@ -383,7 +608,7 @@ function bump(ok, ms) {
   document.getElementById('sms').textContent = ms + 'ms';
 }
 
-// ── API ──────────────────────────────────────────────────────────────────
+// ── API ───────────────────────────────────────────────────────────────────
 async function api(method, path, body) {
   addEntry('request', method, BASE + path, body);
   const t0 = performance.now();
@@ -403,21 +628,30 @@ async function api(method, path, body) {
   }
 }
 
-// ── Health ───────────────────────────────────────────────────────────────
+// ── Health ────────────────────────────────────────────────────────────────
 async function checkHealth() {
   const { ok, data } = await api('GET', '/health');
   const dot = document.getElementById('sdot');
   const txt = document.getElementById('stxt');
   dot.className = 'dot ' + (ok ? 'online' : 'offline');
   txt.textContent = ok ? `online · ${data.env}` : 'offline';
+
+  // Populate LiveKit URL from server env — never from user input
+  if (ok && data.livekit_url) {
+    livekitUrlFromServer = data.livekit_url;
+    document.getElementById('lk-url-display').textContent = data.livekit_url;
+  } else if (ok) {
+    document.getElementById('lk-url-display').textContent = 'LIVEKIT_URL not set in .env';
+    document.getElementById('lk-url-display').style.color = 'var(--danger)';
+  }
 }
 
-// ── Payload ──────────────────────────────────────────────────────────────
+// ── Payload ───────────────────────────────────────────────────────────────
 function buildPayload() {
   const qs = document.getElementById('f-qs').value.split('\n').map(s=>s.trim()).filter(Boolean);
   return {
     simulation_id: document.getElementById('f-simid').value.trim() || `sim-${Date.now()}`,
-    livekit_url:   document.getElementById('f-lkurl').value.trim(),
+    // livekit_url intentionally omitted — server fills it from env in routes.py
     livekit_room:  document.getElementById('f-room').value.trim(),
     persona:       document.getElementById('f-persona').value,
     mode:          document.getElementById('f-mode').value,
@@ -454,7 +688,6 @@ function previewPayload() {
 
 function resetDefaults() {
   document.getElementById('f-simid').value = 'dev-sim-001';
-  document.getElementById('f-lkurl').value = 'wss://your-project.livekit.cloud';
   document.getElementById('f-room').value  = 'dev-room-001';
   previewPayload();
 }
@@ -468,10 +701,15 @@ async function startSim() {
 
   simId = data.simulation_id;
   currentRoomName = data.livekit_room || payload.livekit_room;
+
+  // Use the URL the server responded with (always from env)
+  if (data.livekit_url) livekitUrlFromServer = data.livekit_url;
+
   document.getElementById('btn-start').disabled = true;
   document.getElementById('btn-end').disabled   = false;
   document.getElementById('btn-join').disabled  = false;
   addEntry('event', 'SIM', `Simulation started: ${simId}. Click "Join Room" to connect your mic.`);
+  clearTranscript();
 }
 
 async function endSim() {
@@ -487,7 +725,7 @@ async function endSim() {
   addEntry('event', 'END', 'Simulation ended.');
 }
 
-// ── LiveKit room ─────────────────────────────────────────────────────────
+// ── LiveKit room ──────────────────────────────────────────────────────────
 async function joinRoom() {
   if (!currentRoomName) return;
   addEntry('info', 'TOKEN', `Fetching participant token for room: ${currentRoomName}`);
@@ -498,35 +736,58 @@ async function joinRoom() {
     return;
   }
 
+  // Use the URL from server — data.url comes from the token endpoint which reads config.livekit.url
+  const livekitUrl = data.url || livekitUrlFromServer;
+  if (!livekitUrl) {
+    addEntry('error', 'LIVEKIT', 'LiveKit URL is empty — set LIVEKIT_URL in your .env file');
+    return;
+  }
+
   const { Room, RoomEvent, createLocalAudioTrack } = LivekitClient;
   activeRoom = new Room({ adaptiveStream: true, dynacast: true });
 
   activeRoom.on(RoomEvent.ParticipantConnected, p => {
-    addEntry('event', 'ROOM', `Joined: ${p.identity}`);
+    addEntry('event', 'ROOM', `Participant joined: ${p.identity}`);
     refreshParticipants();
   });
   activeRoom.on(RoomEvent.ParticipantDisconnected, p => {
-    addEntry('warn', 'ROOM', `Left: ${p.identity}`);
+    addEntry('warn', 'ROOM', `Participant left: ${p.identity}`);
     refreshParticipants();
   });
+
+  // ── Agent audio + speaking detection ─────────────────────────────────
   activeRoom.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
     if (track.kind !== 'audio') return;
     const el = track.attach();
     el.style.display = 'none';
     document.body.appendChild(el);
     addEntry('info', 'AUDIO', `Agent audio connected (${participant.identity})`);
-    // simple speaking detector
+
     track.on('audioPlaybackStarted', () => setAgentSpeaking(true));
     track.on('audioPlaybackFailed',  () => setAgentSpeaking(false));
   });
+
   activeRoom.on(RoomEvent.TrackUnsubscribed, () => setAgentSpeaking(false));
+
+  // ── Data channel — receives transcript_chunk events from Node.js ──────
+  // If your Node.js backend relays WebSocket events back to the browser
+  // over LiveKit data messages, they arrive here.
+  activeRoom.on(RoomEvent.DataReceived, (payload, participant) => {
+    try {
+      const msg = JSON.parse(new TextDecoder().decode(payload));
+      handleDataMessage(msg, participant);
+    } catch (e) {
+      // not JSON — ignore
+    }
+  });
+
   activeRoom.on(RoomEvent.Disconnected, () => {
     addEntry('warn','ROOM','Disconnected from room');
     setRoomIdle();
   });
 
   try {
-    await activeRoom.connect(data.url, data.token);
+    await activeRoom.connect(livekitUrl, data.token);
     addEntry('info', 'ROOM', `Connected to ${activeRoom.name} as candidate`);
 
     const audioTrack = await createLocalAudioTrack({ echoCancellation: true, noiseSuppression: true });
@@ -537,13 +798,76 @@ async function joinRoom() {
     document.getElementById('btn-join').disabled  = true;
     document.getElementById('btn-leave').disabled = false;
     setRoomConnected();
+
+    // Poll for transcript data from our own server while connected
+    startTranscriptPolling();
   } catch(e) {
     addEntry('error','ROOM', `Connection failed: ${e.message}`);
   }
 }
 
+// ── Transcript polling ────────────────────────────────────────────────────
+// Since the Pipecat agent sends transcript_chunk events to Node.js via
+// WebSocket (not directly to the browser), we poll our own /transcript
+// endpoint as a simple dev-mode alternative to wiring up a full WS relay.
+// In production, Node.js should relay events to the browser over LiveKit
+// data messages or a dedicated WebSocket connection.
+
+let pollTimer = null;
+let lastPollIndex = 0;
+const transcriptBuffer = [];   // { role, text, id } — deduplicated locally
+
+function startTranscriptPolling() {
+  stopTranscriptPolling();
+  lastPollIndex = 0;
+  pollTimer = setInterval(pollTranscript, 1200);
+}
+
+function stopTranscriptPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function pollTranscript() {
+  if (!simId) return;
+  try {
+    const res = await fetch(`${BASE}/transcript?simulation_id=${encodeURIComponent(simId)}&since=${lastPollIndex}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.entries || !data.entries.length) return;
+    data.entries.forEach(entry => {
+      lastPollIndex = Math.max(lastPollIndex, (entry.index || 0) + 1);
+      renderTranscriptEntry(entry);
+    });
+  } catch(e) {
+    // polling is best-effort — silently ignore errors
+  }
+}
+
+function renderTranscriptEntry(entry) {
+  // entry: { role: 'agent'|'candidate', text: '...', index: N }
+  const role = entry.role === 'agent' ? 'agent' : 'candidate';
+  addBubble(role, entry.text || '');
+}
+
+// ── LiveKit data message handler ──────────────────────────────────────────
+function handleDataMessage(msg, participant) {
+  // Handle transcript_chunk relayed from Node.js backend via LiveKit data channel
+  if (msg.type === 'transcript_chunk') {
+    // Determine role from participant identity
+    const isAgent = participant && participant.identity && participant.identity !== 'candidate';
+    addCandidateMessage(msg.text || '');
+    return;
+  }
+  if (msg.type === 'agent_speech') {
+    addAgentMessage(msg.text || '');
+    return;
+  }
+  addEntry('event', 'DATA', `${msg.type || 'msg'} from ${participant?.identity || '?'}`, msg);
+}
+
 async function leaveRoom() {
   if (!activeRoom) return;
+  stopTranscriptPolling();
   await activeRoom.disconnect();
   activeRoom = null;
   document.getElementById('btn-join').disabled  = false;
@@ -565,9 +889,10 @@ async function toggleMic() {
 }
 
 function setAgentSpeaking(speaking) {
-  agentSpeaking = speaking;
   const vis = document.getElementById('agent-vis');
   if (vis) vis.className = 'agent-vis' + (speaking ? ' speaking' : '');
+  const label = document.getElementById('agent-state-label');
+  if (label) label.textContent = speaking ? 'speaking…' : 'listening';
 }
 
 function refreshParticipants() {
@@ -595,7 +920,7 @@ function setRoomConnected() {
         <div class="bar"></div><div class="bar"></div><div class="bar"></div>
         <div class="bar"></div><div class="bar"></div>
       </div>
-      <div class="agent-label"><strong>Agent</strong> — listening</div>
+      <div class="agent-label"><strong>Agent</strong> — <span id="agent-state-label">listening</span></div>
       <button class="mic-btn" id="mic-btn" onclick="toggleMic()">🎙️</button>
       <div class="mic-label">Mic live</div>
       <div class="participants" id="participants"></div>
@@ -612,13 +937,13 @@ function setRoomIdle() {
     </div>`;
 }
 
-// ── Boot ─────────────────────────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('cfg-url').textContent = BASE;
   previewPayload();
-  addEntry('info','BOOT','Console ready. Click Health, then Start, then Join Room.');
+  addEntry('info','BOOT','Console ready. Click Health to verify server, then Start, then Join Room.');
   checkHealth();
-  ['f-simid','f-dur','f-lkurl','f-room','f-persona','f-mode','f-diff',
+  ['f-simid','f-dur','f-room','f-persona','f-mode','f-diff',
    'f-role','f-pressure','f-memory','f-name','f-sen','f-cv','f-qs'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', previewPayload);

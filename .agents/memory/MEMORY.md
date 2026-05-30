@@ -1,0 +1,1 @@
+- [Pipecat 1.3 LiveKit API](pipecat-livekit-api.md) — correct event names (on_first_participant_joined not on_participant_joined) and runner.cancel() not runner.stop()

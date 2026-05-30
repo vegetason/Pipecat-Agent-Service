@@ -19,8 +19,15 @@ log = get_logger(__name__)
 
 
 async def health():
-    """Liveness check called by Node.js and Docker health checks."""
-    return {"status": "ok", "env": config.env}
+    """
+    Liveness check called by Node.js, Docker health checks, and agent.html.
+    Also returns the LiveKit URL from env so the frontend never has to ask for it.
+    """
+    return {
+        "status": "ok",
+        "env": config.env,
+        "livekit_url": config.livekit.url or "",
+    }
 
 
 async def start_simulation(request: Request):
@@ -33,6 +40,12 @@ async def start_simulation(request: Request):
     except ValueError:
         body = {}
     ctx = load_dev_fixture() if config.is_dev and not body else body
+
+    # Always inject the server-side LiveKit URL — the frontend should never
+    # need to supply this. If the payload already has one (e.g. from Node.js)
+    # it's kept; otherwise we fill it from env.
+    if not ctx.get("livekit_url"):
+        ctx["livekit_url"] = config.livekit.url
 
     try:
         validate_context(ctx)
